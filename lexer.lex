@@ -1,4 +1,4 @@
-%option noyywrap 
+%option noyywrap
 %{
 #include <stdio.h>
 #include "symboltable.h"
@@ -14,10 +14,10 @@ letter [A-Za-z]
 digit [0-9]
 elphanum ({letter}|{digit})
 ID {letter}({letter}|{digit}|"_")*
-
-
+COMMENTS "/*"([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*"*"+"/"
 %%
 
+{COMMENTS}    {comments++; tokens++; insert_comment(yytext); }
 {ID}    { tokens++; insert_id(yytext); }
 
 %%
@@ -35,10 +35,9 @@ int main(int argc, char **argv)
     printf("number of tokens %d\n",tokens);
     printf("number of lines %d\n",linenumber);
     printf("There are %d comments:\n",comments);
-    print_comtab();	/* Print Comments and Symbols */
     print_symtab();
-    cleanup_comtab();	/* Clean up tables */
-    cleanup_symtab();
+    print_comtab();	/* Print Comments and Symbols */
+    // cleanup_comtab();	/* Clean up tables */
+    // cleanup_symtab();
     return 0;
 }
-

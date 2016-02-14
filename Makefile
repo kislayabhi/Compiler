@@ -1,6 +1,6 @@
 TARGET = scanner
 OBJECT = lex.yy.o symboltable.o 
-CC = cc -g
+CC = cc -g -std=c99
 LEX = flex
 LIBS = -lfl 
 
@@ -17,5 +17,4 @@ lex.yy.c: lexer.lex
 	$(LEX) $(LIB) lexer.lex
 
 clean:
-	rm -f $(TARGET) $(OBJECT) 
-
+	rm -f $(TARGET) $(OBJECT) lex.yy.c

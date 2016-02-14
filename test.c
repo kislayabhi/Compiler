@@ -14,6 +14,6 @@ comment
 n = read();
 abc = n + 1;
 def = abc * abc;
-write(def); /* 3: this is /* the end ***/
+write(def); /* 3: this is *//* the end ***/
 }
 
