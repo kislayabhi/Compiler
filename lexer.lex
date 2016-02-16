@@ -6,7 +6,9 @@
 int linenumber=0;
 int tokens=0;
 int comments=0;
-
+int operators=0;
+int separators=0;
+int intliterals=0;
 %}
 
 
@@ -14,12 +16,21 @@ letter [A-Za-z]
 digit [0-9]
 elphanum ({letter}|{digit})
 ID {letter}({letter}|{digit}|"_")*
-COMMENTS "/*"([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*"*"+"/"
+COMMENTS [/][*]([^*]|(\*+([^*/]|[\r\n\t])))*[*]+[/]
+OPERATORS (>=)|(<=)|(!=)|(==)|([|][|])|(&&)|!|[+*/\-<>=]
+SEPARATORS [{}[\]();,.]
+INTLITERALS [0-9]+
+STRINGLITERALS ["](.|[\n\r\t])*["]
+LINES [\n]
 %%
 
+{LINES}    { linenumber++; }
 {COMMENTS}    {comments++; tokens++; insert_comment(yytext); }
+{STRINGLITERALS}    {tokens++;}
 {ID}    { tokens++; insert_id(yytext); }
-
+{OPERATORS}    { tokens++; operators++; }
+{SEPARATORS}    { tokens++; separators++; }
+{INTLITERALS}    { tokens++; }
 %%
 
 int main(int argc, char **argv)
@@ -37,7 +48,7 @@ int main(int argc, char **argv)
     printf("There are %d comments:\n",comments);
     print_symtab();
     print_comtab();	/* Print Comments and Symbols */
-    // cleanup_comtab();	/* Clean up tables */
-    // cleanup_symtab();
+    cleanup_comtab();	/* Clean up tables */
+    cleanup_symtab();
     return 0;
 }
