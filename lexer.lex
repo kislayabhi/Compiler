@@ -24,11 +24,11 @@ STRINGLITERALS ["](.|[\n\r\t])*["]
 LINES [\r\n|\r|\n]
 %x comment
 %%
-"/*" BEGIN(comment); 
-<comment>[^*\n]*	
-<comment>"*"+[^*/\n]*
-<comment>\n linenumber++; 
-<comment>"*"+"/" comments++; tokens++; BEGIN(INITIAL); 
+"/*" BEGIN(comment); yymore(); 
+<comment>[^*\n]* yymore();	
+<comment>"*"+[^*/\n]* yymore();
+<comment>\n linenumber++; yymore();
+<comment>"*"+"/" comments++; tokens++; insert_comment(yytext); BEGIN(INITIAL); 
 {LINES}    {linenumber++;}
 {STRINGLITERALS}    {tokens++;}
 {ID}    { tokens++; insert_id(yytext); }
@@ -47,12 +47,13 @@ int main(int argc, char **argv)
     else
         yyin = stdin;
     yylex();
-    printf("number of tokens %d\n",tokens);
+    printf("\nnumber of tokens %d\n",tokens);
     printf("number of lines %d\n",linenumber);
     printf("There are %d comments:\n",comments);
-    print_symtab();
     print_comtab();	/* Print Comments and Symbols */
+    print_symtab();
     cleanup_comtab();	/* Clean up tables */
     cleanup_symtab();
+    printf("\n");
     return 0;
 }
