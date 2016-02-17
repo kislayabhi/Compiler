@@ -16,16 +16,20 @@ letter [A-Za-z]
 digit [0-9]
 elphanum ({letter}|{digit})
 ID {letter}({letter}|{digit}|"_")*
-COMMENTS [/][*]([^*]|(\*+([^*/]|[\r\n\t])))*[*]+[/]
 OPERATORS (>=)|(<=)|(!=)|(==)|([|][|])|(&&)|!|[+*/\-<>=]
+COMMENTS [/][*]([^*]|(\*+([^*/]|[\r\n\t])))*[*]+[/]
 SEPARATORS [{}[\]();,.]
 INTLITERALS [0-9]+
 STRINGLITERALS ["](.|[\n\r\t])*["]
-LINES [\n]
+LINES [\r\n|\r|\n]
+%x comment
 %%
-
-{LINES}    { linenumber++; }
-{COMMENTS}    {comments++; tokens++; insert_comment(yytext); }
+"/*" BEGIN(comment); 
+<comment>[^*\n]*	
+<comment>"*"+[^*/\n]*
+<comment>\n linenumber++; 
+<comment>"*"+"/" BEGIN(INITIAL);
+{LINES}    {linenumber++;}
 {STRINGLITERALS}    {tokens++;}
 {ID}    { tokens++; insert_id(yytext); }
 {OPERATORS}    { tokens++; operators++; }
