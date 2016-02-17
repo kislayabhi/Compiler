@@ -41,7 +41,7 @@ ERROR .|\n
 {SEPARATORS}    { tokens++; separators++; }
 {INTLITERALS}    { tokens++; }
 {WHITESPACE}
-{ERROR}    { printf("\n Error near line %d : \" %s \" \n", yylineno, yytext); }
+{ERROR}    { printf("\n Error near line %d : \" %s \" \n", yylineno, yytext); exit(-1);}
 %%
 
 int main(int argc, char **argv)
