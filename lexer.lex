@@ -28,7 +28,7 @@ LINES [\r\n|\r|\n]
 <comment>[^*\n]*	
 <comment>"*"+[^*/\n]*
 <comment>\n linenumber++; 
-<comment>"*"+"/" BEGIN(INITIAL);
+<comment>"*"+"/" comments++; tokens++; BEGIN(INITIAL); 
 {LINES}    {linenumber++;}
 {STRINGLITERALS}    {tokens++;}
 {ID}    { tokens++; insert_id(yytext); }
