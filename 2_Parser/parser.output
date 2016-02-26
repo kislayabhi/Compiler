@@ -1,0 +1,174 @@
+Terminals unused in grammar
+
+   ID
+   CONST
+   VOID
+   INT
+   FLOAT
+   IF
+   ELSE
+   WHILE
+   FOR
+   STRUCT
+   TYPEDEF
+   OP_ASSIGN
+   OP_OR
+   OP_AND
+   OP_NOT
+   OP_EQ
+   OP_NE
+   OP_GT
+   OP_LT
+   OP_GE
+   OP_LE
+   OP_PLUS
+   OP_MINUS
+   OP_TIMES
+   OP_DIVIDE
+   MK_LB
+   MK_RB
+   MK_LPAREN
+   MK_RPAREN
+   MK_LBRACE
+   MK_RBRACE
+   MK_COMMA
+   MK_SEMICOLON
+   MK_DOT
+   ERROR
+   RETURN
+
+
+Rules useless in parser due to conflicts
+
+    5 global_decl: function_decl
+
+    6 function_decl: /* empty */
+
+
+State 2 conflicts: 1 reduce/reduce
+State 5 conflicts: 1 reduce/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 program: global_decl_list
+
+    2 global_decl_list: global_decl_list global_decl
+    3                 | /* empty */
+
+    4 global_decl: function_decl
+    5            | function_decl
+
+    6 function_decl: /* empty */
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+ID (258)
+CONST (259)
+VOID (260)
+INT (261)
+FLOAT (262)
+IF (263)
+ELSE (264)
+WHILE (265)
+FOR (266)
+STRUCT (267)
+TYPEDEF (268)
+OP_ASSIGN (269)
+OP_OR (270)
+OP_AND (271)
+OP_NOT (272)
+OP_EQ (273)
+OP_NE (274)
+OP_GT (275)
+OP_LT (276)
+OP_GE (277)
+OP_LE (278)
+OP_PLUS (279)
+OP_MINUS (280)
+OP_TIMES (281)
+OP_DIVIDE (282)
+MK_LB (283)
+MK_RB (284)
+MK_LPAREN (285)
+MK_RPAREN (286)
+MK_LBRACE (287)
+MK_RBRACE (288)
+MK_COMMA (289)
+MK_SEMICOLON (290)
+MK_DOT (291)
+ERROR (292)
+RETURN (293)
+
+
+Nonterminals, with rules where they appear
+
+$accept (39)
+    on left: 0
+program (40)
+    on left: 1, on right: 0
+global_decl_list (41)
+    on left: 2 3, on right: 1 2
+global_decl (42)
+    on left: 4 5, on right: 2
+function_decl (43)
+    on left: 6, on right: 4 5
+
+
+state 0
+
+    0 $accept: . program $end
+
+    $default  reduce using rule 3 (global_decl_list)
+
+    program           go to state 1
+    global_decl_list  go to state 2
+
+
+state 1
+
+    0 $accept: program . $end
+
+    $end  shift, and go to state 3
+
+
+state 2
+
+    1 program: global_decl_list .
+    2 global_decl_list: global_decl_list . global_decl
+
+    $end      reduce using rule 1 (program)
+    $end      [reduce using rule 6 (function_decl)]
+    $default  reduce using rule 1 (program)
+
+    global_decl    go to state 4
+    function_decl  go to state 5
+
+
+state 3
+
+    0 $accept: program $end .
+
+    $default  accept
+
+
+state 4
+
+    2 global_decl_list: global_decl_list global_decl .
+
+    $default  reduce using rule 2 (global_decl_list)
+
+
+state 5
+
+    4 global_decl: function_decl .
+    5            | function_decl .
+
+    $end      reduce using rule 4 (global_decl)
+    $end      [reduce using rule 5 (global_decl)]
+    $default  reduce using rule 4 (global_decl)
