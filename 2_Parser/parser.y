@@ -54,14 +54,21 @@ static int linenumber = 1;
 /* Productions */               /* Semantic actions */
 program                 : global_decl_list;
 global_decl_list        : global_decl_list global_decl | global_decl;
-global_decl             : type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE MK_RBRACE;
+global_decl             : type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE statement_list MK_RBRACE;
 type                    : INT | FLOAT | VOID;
 function_name           : ID;
 parameter_list          : parameter_list MK_COMMA parameter | parameter | ;
-parameter               : type ID array_braces_list;
-array_braces_list       : array_braces_list array_braces | array_braces |;
+parameter               : type ID array_braces_list_one;
+array_braces_list_one   : array_braces_list_one array_braces | blank_array_braces | ;
 array_braces            : MK_LB argument_data MK_RB;
-argument_data           : CONST|;
+argument_data           : CONST;
+blank_array_braces      : MK_LB CONST MK_RB | MK_LB MK_RB;
+statement_list          : statement_list statement | statement | ;
+statement               : type identifier_dec_list MK_SEMICOLON | identifier_dec_list MK_SEMICOLON | MK_SEMICOLON;
+identifier_dec_list     : identifier_dec_list assignment MK_COMMA identifier_dec assignment | identifier_dec assignment;
+identifier_dec          : ID array_braces_list_two;
+array_braces_list_two   : array_braces_list_two array_braces | ;
+assignment              : OP_ASSIGN CONST | ;
 %%
 
 #include "lex.yy.c"
