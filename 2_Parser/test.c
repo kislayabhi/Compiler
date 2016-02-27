@@ -1,7 +1,7 @@
 /* Test1 */
 /* Can you handle WHILE and IF statements ? */
 
-float matatabi( int data1, int data2[][3][4][23], int data3[][12][3])
+void matatabi( int data1, int data2[][3][4][23], int data3[][12][3])
 {
         int id1;
         int id2;

@@ -52,9 +52,66 @@ static int linenumber = 1;
 /* ==== Grammar Section ==== */
 
 /* Productions */               /* Semantic actions */
-program                 : global_decl_list;
-global_decl_list        : global_decl_list global_decl | global_decl;
+program                 : global_decl_list
+                        ;
+global_decl_list        : global_decl_list global_decl
+                        |
+                        ;
+global_decl             : function_decl
+                        ;
+/*
+                        | function_def
+                        | struct_or_union_decl
+                        | parameter_decl_init
+                        ;
+*/
+function_decl           : return_type function_name MK_LPAREN parameter_or_type_list MK_RPAREN MK_SEMICOLON
+                        ;
+/*
+function_def            : return_type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+                        ;
+struct_or_union_decl    : STRUCT structure_tag MK_LBRACE structure_body MK_RBRACE structure_variables MK_SEMICOLON
+                        ;
+parameter_decl_init     : type variable_array_list
+                        ;
+*/
+return_type             : type
+                        | VOID
+                        ;
+function_name           : ID
+                        ;
+parameter_or_type_list  : include_comma parameter_or_type_decl
+                        |
+                        ;
+include_comma           : parameter_or_type_list MK_COMMA
+                        |
+                        ;
+parameter_or_type_decl  : type
+                        | variable_decl
+                        | array_decl
+                        ;
+variable_decl           : type ID
+                        ;
+array_decl              : type ID array_braces array_braces_list
+                        | type ID blank_array_braces array_braces_list
+                        ;
+array_braces_list       : array_braces_list array_braces
+                        |
+                        ;
+array_braces            : MK_LB CONST MK_RB
+                        ;
+blank_array_braces      : MK_LB MK_RB
+                        ;
+type                    : INT
+                        | FLOAT
+                        ;
+
+
+
+
+/*
 global_decl             : type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE statement_list MK_RBRACE;
+
 type                    : INT | FLOAT | VOID;
 function_name           : ID;
 parameter_list          : parameter_list MK_COMMA parameter | parameter | ;
@@ -69,6 +126,7 @@ identifier_dec_list     : identifier_dec_list assignment MK_COMMA identifier_dec
 identifier_dec          : ID array_braces_list_two;
 array_braces_list_two   : array_braces_list_two array_braces | ;
 assignment              : OP_ASSIGN CONST | ;
+*/
 %%
 
 #include "lex.yy.c"
