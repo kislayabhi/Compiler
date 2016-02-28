@@ -9,7 +9,9 @@ int MatrixMultiplication(int a) {
 
 int MatrixMultiplication(int V1[][10], int V2[][10]) {
         data2 = 100;
-        int result[10][10];
+        int result[10][10]=4;
+        result[10][10]=4;
+        /*result={1,2,3};*/
         int dfa;
         float someReal12345;
         int d = 3, f, j=12, ij=09;
@@ -18,8 +20,8 @@ int MatrixMultiplication(int V1[][10], int V2[][10]) {
         df3.length = 888;
 
         z1.length = read();
-        c1.b[1][2] = 1;
-	c1.y = -100.0;
+        c1.b[1][2] = 1.0;
+	c1.y = +1000;
         someReal12345 = fread();
         a = -200000;
         /* int declared here */
@@ -80,7 +82,8 @@ float nagative_float(int a, float b)
         float result;
 
         /* allow implicit conversion*/
-        result = -(a * b);
+        rara = 12+2;
+        result = -(14+2);
 
         return result;
 }
@@ -88,8 +91,14 @@ float nagative_float(int a, float b)
 float myfunc3(int a[][2], float b)
 {
         float ret;
-
         ret = -a[0][0] + b;
+        arr[2] = arr[0] * arr[1] + result + sum;
+        b = a-2;
+        d = 1/7;
+        a = a/n;
+        n = n - 1;
+        y2[3].a3[0][0] = a*b/n;
+        sum = sum + loopvar;
 
         return ret;
 }
@@ -102,7 +111,7 @@ int main()
         int div, sum;
         int loopvar=0;
         float result;
-        myint n;
+        /*myint n;*/
 
 
 
@@ -118,7 +127,7 @@ int main()
                 sum = sum + loopvar;
         }
 
-        write("enter a divider");
+        write(1);
         div = read();
 
         if (div != 0 && sum)

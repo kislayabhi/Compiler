@@ -65,11 +65,11 @@ global_decl             : function_decl
                         | parameter_decl_init
                         ;
 */
-function_decl           : return_type function_name MK_LPAREN parameter_list MK_RPAREN MK_SEMICOLON
-                        | return_type function_name MK_LPAREN MK_RPAREN MK_SEMICOLON
+function_decl           : return_type ID MK_LPAREN parameter_list MK_RPAREN MK_SEMICOLON
+                        | return_type ID MK_LPAREN MK_RPAREN MK_SEMICOLON
                         ;
-function_def            : return_type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
-                        | return_type function_name MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
+function_def            : return_type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+                        | return_type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         ;
 /*
 struct_or_union_decl    : STRUCT structure_tag MK_LBRACE structure_body MK_RBRACE structure_variables MK_SEMICOLON
@@ -92,8 +92,10 @@ statement               : horz_decl_init_list
 
 */
                         ;
-return_statement        : RETURN signed_const MK_SEMICOLON
+return_statement        : RETURN sign CONST MK_SEMICOLON
+                        | RETURN CONST MK_SEMICOLON
                         | RETURN sign id MK_SEMICOLON
+                        | RETURN id MK_SEMICOLON
                         ;
 horz_init_list          : derived_id assignment MK_SEMICOLON
                         ;
@@ -110,19 +112,26 @@ horz_decl_init_list     : parameter_decl assignment more_horz_param_list MK_SEMI
 more_horz_param_list    : MK_COMMA ID assignment more_horz_param_list
                         | MK_COMMA ID assignment
                         ;
-assignment              : OP_ASSIGN signed_const
-                        | OP_ASSIGN function_call
+assignment              : OP_ASSIGN function_call
+                        | OP_ASSIGN expression_list_list
                         |
-/*
-                        | OP_ASSIGN expression
-*/
                         ;
-function_call           : function_name MK_LPAREN MK_RPAREN
+expression_list_list    : CONST
+                        | CONST expression_list
+                        | id expression_list
+                        | expression_list
+                        ;
+expression_list         : arithmetic_units primary expression_list
+                        | arithmetic_units primary
+                        ;
+primary                 : id
+                        | CONST
+                        | MK_LPAREN expression_list_list MK_RPAREN
+                        ;
+function_call           : ID MK_LPAREN MK_RPAREN
                         ;
 return_type             : type
                         | VOID
-                        ;
-function_name           : ID
                         ;
 parameter_list          : parameter_decl
                         | parameter_list MK_COMMA parameter_decl
@@ -145,30 +154,13 @@ blank_array_braces      : MK_LB MK_RB
 type                    : INT
                         | FLOAT
                         ;
-signed_const            : sign CONST
-                        ;
 sign                    : OP_PLUS
                         | OP_MINUS
-                        |
                         ;
-/*
-global_decl             : type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE statement_list MK_RBRACE;
-
-type                    : INT | FLOAT | VOID;
-function_name           : ID;
-parameter_list          : parameter_list MK_COMMA parameter | parameter | ;
-parameter               : type ID array_braces_list_one;
-array_braces_list_one   : array_braces_list_one array_braces | blank_array_braces | ;
-array_braces            : MK_LB argument_data MK_RB;
-argument_data           : CONST;
-blank_array_braces      : MK_LB CONST MK_RB | MK_LB MK_RB;
-statement_list          : statement_list statement | statement | ;
-statement               : type identifier_dec_list MK_SEMICOLON | identifier_dec_list MK_SEMICOLON | MK_SEMICOLON;
-identifier_dec_list     : identifier_dec_list assignment MK_COMMA identifier_dec assignment | identifier_dec assignment;
-identifier_dec          : ID array_braces_list_two;
-array_braces_list_two   : array_braces_list_two array_braces | ;
-assignment              : OP_ASSIGN CONST | ;
-*/
+arithmetic_units        : sign
+                        | OP_TIMES
+                        | OP_DIVIDE
+                        ;
 %%
 
 #include "lex.yy.c"
