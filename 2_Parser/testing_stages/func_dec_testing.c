@@ -1,4 +1,4 @@
-int main3(int);
+/* int main3(int);*/
 int MatrixMultiplication(int V1[][10], int V2[][10]);
 int main();
 int Matrix_Multiplication_Function (int V1[][10], int V2[][10]);

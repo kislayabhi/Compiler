@@ -58,36 +58,76 @@ global_decl_list        : global_decl_list global_decl
                         |
                         ;
 global_decl             : function_decl
+                        | function_def
                         ;
 /*
-                        | function_def
                         | struct_or_union_decl
                         | parameter_decl_init
                         ;
 */
-function_decl           : return_type function_name MK_LPAREN parameter_or_type_list MK_RPAREN MK_SEMICOLON
+function_decl           : return_type function_name MK_LPAREN parameter_list MK_RPAREN MK_SEMICOLON
+                        | return_type function_name MK_LPAREN MK_RPAREN MK_SEMICOLON
+                        ;
+function_def            : return_type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+                        | return_type function_name MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         ;
 /*
-function_def            : return_type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
-                        ;
 struct_or_union_decl    : STRUCT structure_tag MK_LBRACE structure_body MK_RBRACE structure_variables MK_SEMICOLON
                         ;
 parameter_decl_init     : type variable_array_list
                         ;
 */
+function_body           : statement_list
+                        ;
+statement_list          : statement_list statement
+                        |
+                        ;
+statement               : horz_decl_init_list
+                        | horz_init_list
+                        | return_statement
+                        | function_call MK_SEMICOLON
+                        ;
+/*
+                        | for_while_if
+
+*/
+                        ;
+return_statement        : RETURN signed_const MK_SEMICOLON
+                        | RETURN sign id MK_SEMICOLON
+                        ;
+horz_init_list          : derived_id assignment MK_SEMICOLON
+                        ;
+derived_id              : id MK_DOT id
+                        | id
+                        ;
+id                      : ID
+                        | ID array_braces array_braces_list
+                        | ID blank_array_braces array_braces_list
+                        ;
+horz_decl_init_list     : parameter_decl assignment more_horz_param_list MK_SEMICOLON
+                        | parameter_decl assignment MK_SEMICOLON
+                        ;
+more_horz_param_list    : MK_COMMA ID assignment more_horz_param_list
+                        | MK_COMMA ID assignment
+                        ;
+assignment              : OP_ASSIGN signed_const
+                        | OP_ASSIGN function_call
+                        |
+/*
+                        | OP_ASSIGN expression
+*/
+                        ;
+function_call           : function_name MK_LPAREN MK_RPAREN
+                        ;
 return_type             : type
                         | VOID
                         ;
 function_name           : ID
                         ;
-parameter_or_type_list  : include_comma parameter_or_type_decl
-                        |
+parameter_list          : parameter_decl
+                        | parameter_list MK_COMMA parameter_decl
                         ;
-include_comma           : parameter_or_type_list MK_COMMA
-                        |
-                        ;
-parameter_or_type_decl  : type
-                        | variable_decl
+parameter_decl          : variable_decl
                         | array_decl
                         ;
 variable_decl           : type ID
@@ -105,10 +145,12 @@ blank_array_braces      : MK_LB MK_RB
 type                    : INT
                         | FLOAT
                         ;
-
-
-
-
+signed_const            : sign CONST
+                        ;
+sign                    : OP_PLUS
+                        | OP_MINUS
+                        |
+                        ;
 /*
 global_decl             : type function_name MK_LPAREN parameter_list MK_RPAREN MK_LBRACE statement_list MK_RBRACE;
 
