@@ -46,7 +46,8 @@ static int linenumber = 1;
 %token RETURN
 
 %start program
-
+%right "then" ELSE /*Same precedence but "shift" wins"*/
+%right "lessthanlparen" MK_LPAREN
 %%
 
 /* ==== Grammar Section ==== */
@@ -55,21 +56,30 @@ static int linenumber = 1;
 program                 : global_decl_list
                         ;
 global_decl_list        : global_decl_list global_decl
+                        | MK_SEMICOLON
                         |
                         ;
-global_decl             : function_decl
+global_decl             : function_decl MK_SEMICOLON
                         | function_def
+                        | horz_decl_init_list MK_SEMICOLON
+                        | horz_init_list MK_SEMICOLON
+                        | function_call MK_SEMICOLON
+                        | control_flow
                         ;
 /*
                         | struct_or_union_decl
                         | parameter_decl_init
                         ;
 */
-function_decl           : return_type ID MK_LPAREN parameter_list MK_RPAREN MK_SEMICOLON
-                        | return_type ID MK_LPAREN MK_RPAREN MK_SEMICOLON
+function_decl           : type ID MK_LPAREN parameter_list MK_RPAREN
+                        | type ID MK_LPAREN MK_RPAREN
+                        | VOID ID MK_LPAREN parameter_list MK_RPAREN
+                        | VOID ID MK_LPAREN MK_RPAREN
                         ;
-function_def            : return_type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
-                        | return_type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
+function_def            : type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+                        | type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
+                        | VOID ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+                        | VOID ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         ;
 /*
 struct_or_union_decl    : STRUCT structure_tag MK_LBRACE structure_body MK_RBRACE structure_variables MK_SEMICOLON
@@ -82,57 +92,92 @@ function_body           : statement_list
 statement_list          : statement_list statement
                         |
                         ;
-statement               : horz_decl_init_list
-                        | horz_init_list
-                        | return_statement
+statement               : return_statement MK_SEMICOLON
                         | function_call MK_SEMICOLON
+                        | control_flow
+                        | control_arguments MK_SEMICOLON
+                        | MK_SEMICOLON
                         ;
-/*
-                        | for_while_if
-
-*/
+control_flow            : WHILE MK_LPAREN control_arguments MK_RPAREN statement
+                        | WHILE MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+                        | IF MK_LPAREN control_arguments MK_RPAREN statement                            %prec "then"
+                        | IF MK_LPAREN control_arguments MK_RPAREN statement ELSE statement
+                        | IF MK_LPAREN control_arguments MK_RPAREN statement ELSE MK_LBRACE function_body MK_RBRACE
+                        | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE    %prec "then"
+                        | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE statement
+                        | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
+                        | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN statement
+                        | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         ;
-return_statement        : RETURN sign CONST MK_SEMICOLON
-                        | RETURN CONST MK_SEMICOLON
-                        | RETURN sign id MK_SEMICOLON
-                        | RETURN id MK_SEMICOLON
+control_arguments       : expression_list_list
+                        | horz_init_list
+                        | horz_decl_init_list
                         ;
-horz_init_list          : derived_id assignment MK_SEMICOLON
+return_statement        : RETURN sign CONST
+                        | RETURN CONST
+                        | RETURN sign id
+                        | RETURN id
+                        ;
+horz_init_list          : derived_id hard_assignment
                         ;
 derived_id              : id MK_DOT id
                         | id
                         ;
-id                      : ID
+id                      : ID                                                    %prec "lessthanlparen"
                         | ID array_braces array_braces_list
                         | ID blank_array_braces array_braces_list
                         ;
-horz_decl_init_list     : parameter_decl assignment more_horz_param_list MK_SEMICOLON
-                        | parameter_decl assignment MK_SEMICOLON
+horz_decl_init_list     : parameter_decl assignment more_horz_param_list
+                        | parameter_decl assignment
                         ;
 more_horz_param_list    : MK_COMMA ID assignment more_horz_param_list
                         | MK_COMMA ID assignment
                         ;
-assignment              : OP_ASSIGN function_call
-                        | OP_ASSIGN expression_list_list
+assignment              : hard_assignment
                         |
+                        ;
+hard_assignment         : OP_ASSIGN function_call
+                        | OP_ASSIGN expression_list_list
                         ;
 expression_list_list    : CONST
                         | CONST expression_list
-                        | id expression_list
+                        | derived_id expression_list
                         | expression_list
+                        | derived_id
+/*
+                        | MK_LPAREN expression_list_list MK_RPAREN
+*/
                         ;
-expression_list         : arithmetic_units primary expression_list
-                        | arithmetic_units primary
+expression_list         : expression expression_list
+                        | expression
+/*
+                        | MK_LPAREN expression_list_list MK_RPAREN
+*/
+                        ;
+expression              : arithmetic_units primary
+                        | arithmetic_units                                              %prec "lessthanlparen"
+                        | arithmetic_units MK_LPAREN expression_list_list MK_RPAREN
+                        | MK_LPAREN expression_list_list MK_RPAREN
+
                         ;
 primary                 : id
                         | CONST
+/*
                         | MK_LPAREN expression_list_list MK_RPAREN
+*/
                         ;
 function_call           : ID MK_LPAREN MK_RPAREN
+                        | ID MK_LPAREN argument_list MK_RPAREN
                         ;
+/*
 return_type             : type
                         | VOID
                         ;
+*/
+argument_list           : argument
+                        | argument_list MK_COMMA argument
+                        ;
+argument                : id|CONST;
 parameter_list          : parameter_decl
                         | parameter_list MK_COMMA parameter_decl
                         ;
@@ -148,6 +193,7 @@ array_braces_list       : array_braces_list array_braces
                         |
                         ;
 array_braces            : MK_LB CONST MK_RB
+                        | MK_LB ID MK_RB
                         ;
 blank_array_braces      : MK_LB MK_RB
                         ;
@@ -156,10 +202,21 @@ type                    : INT
                         ;
 sign                    : OP_PLUS
                         | OP_MINUS
+                        | OP_NOT
                         ;
 arithmetic_units        : sign
                         | OP_TIMES
                         | OP_DIVIDE
+                        | binary_units
+                        ;
+binary_units            : OP_OR
+                        | OP_AND
+                        | OP_EQ
+                        | OP_NE
+                        | OP_LT
+                        | OP_GT
+                        | OP_LE
+                        | OP_GE
                         ;
 %%
 

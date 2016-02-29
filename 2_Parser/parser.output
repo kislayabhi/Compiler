@@ -1,20 +1,7 @@
 Terminals unused in grammar
 
-   IF
-   ELSE
-   WHILE
-   FOR
    STRUCT
    TYPEDEF
-   OP_OR
-   OP_AND
-   OP_NOT
-   OP_EQ
-   OP_NE
-   OP_GT
-   OP_LT
-   OP_GE
-   OP_LE
    ERROR
 
 
@@ -25,1143 +12,2425 @@ Grammar
     1 program: global_decl_list
 
     2 global_decl_list: global_decl_list global_decl
-    3                 | %empty
+    3                 | MK_SEMICOLON
+    4                 | %empty
 
-    4 global_decl: function_decl
-    5            | function_def
+    5 global_decl: function_decl MK_SEMICOLON
+    6            | function_def
+    7            | horz_decl_init_list MK_SEMICOLON
+    8            | horz_init_list MK_SEMICOLON
+    9            | function_call MK_SEMICOLON
+   10            | control_flow
 
-    6 function_decl: return_type ID MK_LPAREN parameter_list MK_RPAREN MK_SEMICOLON
-    7              | return_type ID MK_LPAREN MK_RPAREN MK_SEMICOLON
+   11 function_decl: type ID MK_LPAREN parameter_list MK_RPAREN
+   12              | type ID MK_LPAREN MK_RPAREN
+   13              | VOID ID MK_LPAREN parameter_list MK_RPAREN
+   14              | VOID ID MK_LPAREN MK_RPAREN
 
-    8 function_def: return_type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
-    9             | return_type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   15 function_def: type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   16             | type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   17             | VOID ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   18             | VOID ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-   10 function_body: statement_list
+   19 function_body: statement_list
 
-   11 statement_list: statement_list statement
-   12               | %empty
+   20 statement_list: statement_list statement
+   21               | %empty
 
-   13 statement: horz_decl_init_list
-   14          | horz_init_list
-   15          | return_statement
-   16          | function_call MK_SEMICOLON
+   22 statement: return_statement MK_SEMICOLON
+   23          | function_call MK_SEMICOLON
+   24          | control_flow
+   25          | control_arguments MK_SEMICOLON
+   26          | MK_SEMICOLON
 
-   17 return_statement: RETURN sign CONST MK_SEMICOLON
-   18                 | RETURN CONST MK_SEMICOLON
-   19                 | RETURN sign id MK_SEMICOLON
-   20                 | RETURN id MK_SEMICOLON
+   27 control_flow: WHILE MK_LPAREN control_arguments MK_RPAREN statement
+   28             | WHILE MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   29             | IF MK_LPAREN control_arguments MK_RPAREN statement
+   30             | IF MK_LPAREN control_arguments MK_RPAREN statement ELSE statement
+   31             | IF MK_LPAREN control_arguments MK_RPAREN statement ELSE MK_LBRACE function_body MK_RBRACE
+   32             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   33             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE statement
+   34             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
+   35             | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN statement
+   36             | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-   21 horz_init_list: derived_id assignment MK_SEMICOLON
+   37 control_arguments: expression_list_list
+   38                  | horz_init_list
+   39                  | horz_decl_init_list
 
-   22 derived_id: id MK_DOT id
-   23           | id
+   40 return_statement: RETURN sign CONST
+   41                 | RETURN CONST
+   42                 | RETURN sign id
+   43                 | RETURN id
 
-   24 id: ID
-   25   | ID array_braces array_braces_list
-   26   | ID blank_array_braces array_braces_list
+   44 horz_init_list: derived_id hard_assignment
 
-   27 horz_decl_init_list: parameter_decl assignment more_horz_param_list MK_SEMICOLON
-   28                    | parameter_decl assignment MK_SEMICOLON
+   45 derived_id: id MK_DOT id
+   46           | id
 
-   29 more_horz_param_list: MK_COMMA ID assignment more_horz_param_list
-   30                     | MK_COMMA ID assignment
+   47 id: ID
+   48   | ID array_braces array_braces_list
+   49   | ID blank_array_braces array_braces_list
 
-   31 assignment: OP_ASSIGN function_call
-   32           | OP_ASSIGN expression_list_list
-   33           | %empty
+   50 horz_decl_init_list: parameter_decl assignment more_horz_param_list
+   51                    | parameter_decl assignment
 
-   34 expression_list_list: CONST
-   35                     | CONST expression_list
-   36                     | id expression_list
-   37                     | expression_list
+   52 more_horz_param_list: MK_COMMA ID assignment more_horz_param_list
+   53                     | MK_COMMA ID assignment
 
-   38 expression_list: arithmetic_units primary expression_list
-   39                | arithmetic_units primary
+   54 assignment: hard_assignment
+   55           | %empty
 
-   40 primary: id
-   41        | CONST
-   42        | MK_LPAREN expression_list_list MK_RPAREN
+   56 hard_assignment: OP_ASSIGN function_call
+   57                | OP_ASSIGN expression_list_list
 
-   43 function_call: ID MK_LPAREN MK_RPAREN
+   58 expression_list_list: CONST
+   59                     | CONST expression_list
+   60                     | derived_id expression_list
+   61                     | expression_list
+   62                     | derived_id
 
-   44 return_type: type
-   45            | VOID
+   63 expression_list: expression expression_list
+   64                | expression
 
-   46 parameter_list: parameter_decl
-   47               | parameter_list MK_COMMA parameter_decl
+   65 expression: arithmetic_units primary
+   66           | arithmetic_units
+   67           | arithmetic_units MK_LPAREN expression_list_list MK_RPAREN
+   68           | MK_LPAREN expression_list_list MK_RPAREN
 
-   48 parameter_decl: variable_decl
-   49               | array_decl
+   69 primary: id
+   70        | CONST
 
-   50 variable_decl: type ID
+   71 function_call: ID MK_LPAREN MK_RPAREN
+   72              | ID MK_LPAREN argument_list MK_RPAREN
 
-   51 array_decl: type ID array_braces array_braces_list
-   52           | type ID blank_array_braces array_braces_list
+   73 argument_list: argument
+   74              | argument_list MK_COMMA argument
 
-   53 array_braces_list: array_braces_list array_braces
-   54                  | %empty
+   75 argument: id
+   76         | CONST
 
-   55 array_braces: MK_LB CONST MK_RB
+   77 parameter_list: parameter_decl
+   78               | parameter_list MK_COMMA parameter_decl
 
-   56 blank_array_braces: MK_LB MK_RB
+   79 parameter_decl: variable_decl
+   80               | array_decl
 
-   57 type: INT
-   58     | FLOAT
+   81 variable_decl: type ID
 
-   59 sign: OP_PLUS
-   60     | OP_MINUS
+   82 array_decl: type ID array_braces array_braces_list
+   83           | type ID blank_array_braces array_braces_list
 
-   61 arithmetic_units: sign
-   62                 | OP_TIMES
-   63                 | OP_DIVIDE
+   84 array_braces_list: array_braces_list array_braces
+   85                  | %empty
+
+   86 array_braces: MK_LB CONST MK_RB
+   87             | MK_LB ID MK_RB
+
+   88 blank_array_braces: MK_LB MK_RB
+
+   89 type: INT
+   90     | FLOAT
+
+   91 sign: OP_PLUS
+   92     | OP_MINUS
+   93     | OP_NOT
+
+   94 arithmetic_units: sign
+   95                 | OP_TIMES
+   96                 | OP_DIVIDE
+   97                 | binary_units
+
+   98 binary_units: OP_OR
+   99             | OP_AND
+  100             | OP_EQ
+  101             | OP_NE
+  102             | OP_LT
+  103             | OP_GT
+  104             | OP_LE
+  105             | OP_GE
 
 
 Terminals, with rules where they appear
 
 $end (0) 0
 error (256)
-ID (258) 6 7 8 9 24 25 26 29 30 43 50 51 52
-CONST (259) 17 18 34 35 41 55
-VOID (260) 45
-INT (261) 57
-FLOAT (262) 58
-IF (263)
-ELSE (264)
-WHILE (265)
-FOR (266)
+ID (258) 11 12 13 14 15 16 17 18 47 48 49 52 53 71 72 81 82 83 87
+CONST (259) 40 41 58 59 70 76 86
+VOID (260) 13 14 17 18
+INT (261) 89
+FLOAT (262) 90
+IF (263) 29 30 31 32 33 34
+ELSE (264) 30 31 33 34
+WHILE (265) 27 28
+FOR (266) 35 36
 STRUCT (267)
 TYPEDEF (268)
-OP_ASSIGN (269) 31 32
-OP_OR (270)
-OP_AND (271)
-OP_NOT (272)
-OP_EQ (273)
-OP_NE (274)
-OP_GT (275)
-OP_LT (276)
-OP_GE (277)
-OP_LE (278)
-OP_PLUS (279) 59
-OP_MINUS (280) 60
-OP_TIMES (281) 62
-OP_DIVIDE (282) 63
-MK_LB (283) 55 56
-MK_RB (284) 55 56
-MK_LPAREN (285) 6 7 8 9 42 43
-MK_RPAREN (286) 6 7 8 9 42 43
-MK_LBRACE (287) 8 9
-MK_RBRACE (288) 8 9
-MK_COMMA (289) 29 30 47
-MK_SEMICOLON (290) 6 7 16 17 18 19 20 21 27 28
-MK_DOT (291) 22
+OP_ASSIGN (269) 56 57
+OP_OR (270) 98
+OP_AND (271) 99
+OP_NOT (272) 93
+OP_EQ (273) 100
+OP_NE (274) 101
+OP_GT (275) 103
+OP_LT (276) 102
+OP_GE (277) 105
+OP_LE (278) 104
+OP_PLUS (279) 91
+OP_MINUS (280) 92
+OP_TIMES (281) 95
+OP_DIVIDE (282) 96
+MK_LB (283) 86 87 88
+MK_RB (284) 86 87 88
+MK_LPAREN (285) 11 12 13 14 15 16 17 18 27 28 29 30 31 32 33 34 35
+    36 67 68 71 72
+MK_RPAREN (286) 11 12 13 14 15 16 17 18 27 28 29 30 31 32 33 34 35
+    36 67 68 71 72
+MK_LBRACE (287) 15 16 17 18 28 31 32 33 34 36
+MK_RBRACE (288) 15 16 17 18 28 31 32 33 34 36
+MK_COMMA (289) 52 53 74 78
+MK_SEMICOLON (290) 3 5 7 8 9 22 23 25 26 35 36
+MK_DOT (291) 45
 ERROR (292)
-RETURN (293) 17 18 19 20
+RETURN (293) 40 41 42 43
+"then" (294)
+"lessthanlparen" (295)
 
 
 Nonterminals, with rules where they appear
 
-$accept (39)
+$accept (41)
     on left: 0
-program (40)
+program (42)
     on left: 1, on right: 0
-global_decl_list (41)
-    on left: 2 3, on right: 1 2
-global_decl (42)
-    on left: 4 5, on right: 2
-function_decl (43)
-    on left: 6 7, on right: 4
-function_def (44)
-    on left: 8 9, on right: 5
-function_body (45)
-    on left: 10, on right: 8 9
-statement_list (46)
-    on left: 11 12, on right: 10 11
-statement (47)
-    on left: 13 14 15 16, on right: 11
-return_statement (48)
-    on left: 17 18 19 20, on right: 15
-horz_init_list (49)
-    on left: 21, on right: 14
-derived_id (50)
-    on left: 22 23, on right: 21
-id (51)
-    on left: 24 25 26, on right: 19 20 22 23 36 40
-horz_decl_init_list (52)
-    on left: 27 28, on right: 13
-more_horz_param_list (53)
-    on left: 29 30, on right: 27 29
-assignment (54)
-    on left: 31 32 33, on right: 21 27 28 29 30
-expression_list_list (55)
-    on left: 34 35 36 37, on right: 32 42
-expression_list (56)
-    on left: 38 39, on right: 35 36 37 38
-primary (57)
-    on left: 40 41 42, on right: 38 39
-function_call (58)
-    on left: 43, on right: 16 31
-return_type (59)
-    on left: 44 45, on right: 6 7 8 9
-parameter_list (60)
-    on left: 46 47, on right: 6 8 47
-parameter_decl (61)
-    on left: 48 49, on right: 27 28 46 47
-variable_decl (62)
-    on left: 50, on right: 48
-array_decl (63)
-    on left: 51 52, on right: 49
-array_braces_list (64)
-    on left: 53 54, on right: 25 26 51 52 53
-array_braces (65)
-    on left: 55, on right: 25 51 53
-blank_array_braces (66)
-    on left: 56, on right: 26 52
-type (67)
-    on left: 57 58, on right: 44 50 51 52
-sign (68)
-    on left: 59 60, on right: 17 19 61
-arithmetic_units (69)
-    on left: 61 62 63, on right: 38 39
+global_decl_list (43)
+    on left: 2 3 4, on right: 1 2
+global_decl (44)
+    on left: 5 6 7 8 9 10, on right: 2
+function_decl (45)
+    on left: 11 12 13 14, on right: 5
+function_def (46)
+    on left: 15 16 17 18, on right: 6
+function_body (47)
+    on left: 19, on right: 15 16 17 18 28 31 32 33 34 36
+statement_list (48)
+    on left: 20 21, on right: 19 20
+statement (49)
+    on left: 22 23 24 25 26, on right: 20 27 29 30 31 33 35
+control_flow (50)
+    on left: 27 28 29 30 31 32 33 34 35 36, on right: 10 24
+control_arguments (51)
+    on left: 37 38 39, on right: 25 27 28 29 30 31 32 33 34 35 36
+return_statement (52)
+    on left: 40 41 42 43, on right: 22
+horz_init_list (53)
+    on left: 44, on right: 8 38
+derived_id (54)
+    on left: 45 46, on right: 44 60 62
+id (55)
+    on left: 47 48 49, on right: 42 43 45 46 69 75
+horz_decl_init_list (56)
+    on left: 50 51, on right: 7 39
+more_horz_param_list (57)
+    on left: 52 53, on right: 50 52
+assignment (58)
+    on left: 54 55, on right: 50 51 52 53
+hard_assignment (59)
+    on left: 56 57, on right: 44 54
+expression_list_list (60)
+    on left: 58 59 60 61 62, on right: 37 57 67 68
+expression_list (61)
+    on left: 63 64, on right: 59 60 61 63
+expression (62)
+    on left: 65 66 67 68, on right: 63 64
+primary (63)
+    on left: 69 70, on right: 65
+function_call (64)
+    on left: 71 72, on right: 9 23 56
+argument_list (65)
+    on left: 73 74, on right: 72 74
+argument (66)
+    on left: 75 76, on right: 73 74
+parameter_list (67)
+    on left: 77 78, on right: 11 13 15 17 78
+parameter_decl (68)
+    on left: 79 80, on right: 50 51 77 78
+variable_decl (69)
+    on left: 81, on right: 79
+array_decl (70)
+    on left: 82 83, on right: 80
+array_braces_list (71)
+    on left: 84 85, on right: 48 49 82 83 84
+array_braces (72)
+    on left: 86 87, on right: 48 82 84
+blank_array_braces (73)
+    on left: 88, on right: 49 83
+type (74)
+    on left: 89 90, on right: 11 12 15 16 81 82 83
+sign (75)
+    on left: 91 92 93, on right: 40 42 94
+arithmetic_units (76)
+    on left: 94 95 96 97, on right: 65 66 67
+binary_units (77)
+    on left: 98 99 100 101 102 103 104 105, on right: 97
 
 
 State 0
 
     0 $accept: . program $end
 
-    $default  reduce using rule 3 (global_decl_list)
+    MK_SEMICOLON  shift, and go to state 1
 
-    program           go to state 1
-    global_decl_list  go to state 2
+    $default  reduce using rule 4 (global_decl_list)
+
+    program           go to state 2
+    global_decl_list  go to state 3
 
 
 State 1
 
-    0 $accept: program . $end
+    3 global_decl_list: MK_SEMICOLON .
 
-    $end  shift, and go to state 3
+    $default  reduce using rule 3 (global_decl_list)
 
 
 State 2
 
-    1 program: global_decl_list .
-    2 global_decl_list: global_decl_list . global_decl
+    0 $accept: program . $end
 
-    VOID   shift, and go to state 4
-    INT    shift, and go to state 5
-    FLOAT  shift, and go to state 6
-
-    $default  reduce using rule 1 (program)
-
-    global_decl    go to state 7
-    function_decl  go to state 8
-    function_def   go to state 9
-    return_type    go to state 10
-    type           go to state 11
+    $end  shift, and go to state 4
 
 
 State 3
+
+    1 program: global_decl_list .
+    2 global_decl_list: global_decl_list . global_decl
+
+    ID     shift, and go to state 5
+    VOID   shift, and go to state 6
+    INT    shift, and go to state 7
+    FLOAT  shift, and go to state 8
+    IF     shift, and go to state 9
+    WHILE  shift, and go to state 10
+    FOR    shift, and go to state 11
+
+    $default  reduce using rule 1 (program)
+
+    global_decl          go to state 12
+    function_decl        go to state 13
+    function_def         go to state 14
+    control_flow         go to state 15
+    horz_init_list       go to state 16
+    derived_id           go to state 17
+    id                   go to state 18
+    horz_decl_init_list  go to state 19
+    function_call        go to state 20
+    parameter_decl       go to state 21
+    variable_decl        go to state 22
+    array_decl           go to state 23
+    type                 go to state 24
+
+
+State 4
 
     0 $accept: program $end .
 
     $default  accept
 
 
-State 4
-
-   45 return_type: VOID .
-
-    $default  reduce using rule 45 (return_type)
-
-
 State 5
 
-   57 type: INT .
+   47 id: ID .
+   48   | ID . array_braces array_braces_list
+   49   | ID . blank_array_braces array_braces_list
+   71 function_call: ID . MK_LPAREN MK_RPAREN
+   72              | ID . MK_LPAREN argument_list MK_RPAREN
 
-    $default  reduce using rule 57 (type)
+    MK_LB      shift, and go to state 25
+    MK_LPAREN  shift, and go to state 26
+
+    $default  reduce using rule 47 (id)
+
+    array_braces        go to state 27
+    blank_array_braces  go to state 28
 
 
 State 6
 
-   58 type: FLOAT .
+   13 function_decl: VOID . ID MK_LPAREN parameter_list MK_RPAREN
+   14              | VOID . ID MK_LPAREN MK_RPAREN
+   17 function_def: VOID . ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   18             | VOID . ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-    $default  reduce using rule 58 (type)
+    ID  shift, and go to state 29
 
 
 State 7
+
+   89 type: INT .
+
+    $default  reduce using rule 89 (type)
+
+
+State 8
+
+   90 type: FLOAT .
+
+    $default  reduce using rule 90 (type)
+
+
+State 9
+
+   29 control_flow: IF . MK_LPAREN control_arguments MK_RPAREN statement
+   30             | IF . MK_LPAREN control_arguments MK_RPAREN statement ELSE statement
+   31             | IF . MK_LPAREN control_arguments MK_RPAREN statement ELSE MK_LBRACE function_body MK_RBRACE
+   32             | IF . MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   33             | IF . MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE statement
+   34             | IF . MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
+
+    MK_LPAREN  shift, and go to state 30
+
+
+State 10
+
+   27 control_flow: WHILE . MK_LPAREN control_arguments MK_RPAREN statement
+   28             | WHILE . MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+
+    MK_LPAREN  shift, and go to state 31
+
+
+State 11
+
+   35 control_flow: FOR . MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN statement
+   36             | FOR . MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+
+    MK_LPAREN  shift, and go to state 32
+
+
+State 12
 
     2 global_decl_list: global_decl_list global_decl .
 
     $default  reduce using rule 2 (global_decl_list)
 
 
-State 8
-
-    4 global_decl: function_decl .
-
-    $default  reduce using rule 4 (global_decl)
-
-
-State 9
-
-    5 global_decl: function_def .
-
-    $default  reduce using rule 5 (global_decl)
-
-
-State 10
-
-    6 function_decl: return_type . ID MK_LPAREN parameter_list MK_RPAREN MK_SEMICOLON
-    7              | return_type . ID MK_LPAREN MK_RPAREN MK_SEMICOLON
-    8 function_def: return_type . ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
-    9             | return_type . ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
-
-    ID  shift, and go to state 12
-
-
-State 11
-
-   44 return_type: type .
-
-    $default  reduce using rule 44 (return_type)
-
-
-State 12
-
-    6 function_decl: return_type ID . MK_LPAREN parameter_list MK_RPAREN MK_SEMICOLON
-    7              | return_type ID . MK_LPAREN MK_RPAREN MK_SEMICOLON
-    8 function_def: return_type ID . MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
-    9             | return_type ID . MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
-
-    MK_LPAREN  shift, and go to state 13
-
-
 State 13
 
-    6 function_decl: return_type ID MK_LPAREN . parameter_list MK_RPAREN MK_SEMICOLON
-    7              | return_type ID MK_LPAREN . MK_RPAREN MK_SEMICOLON
-    8 function_def: return_type ID MK_LPAREN . parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
-    9             | return_type ID MK_LPAREN . MK_RPAREN MK_LBRACE function_body MK_RBRACE
+    5 global_decl: function_decl . MK_SEMICOLON
 
-    INT        shift, and go to state 5
-    FLOAT      shift, and go to state 6
-    MK_RPAREN  shift, and go to state 14
-
-    parameter_list  go to state 15
-    parameter_decl  go to state 16
-    variable_decl   go to state 17
-    array_decl      go to state 18
-    type            go to state 19
+    MK_SEMICOLON  shift, and go to state 33
 
 
 State 14
 
-    7 function_decl: return_type ID MK_LPAREN MK_RPAREN . MK_SEMICOLON
-    9 function_def: return_type ID MK_LPAREN MK_RPAREN . MK_LBRACE function_body MK_RBRACE
+    6 global_decl: function_def .
 
-    MK_LBRACE     shift, and go to state 20
-    MK_SEMICOLON  shift, and go to state 21
+    $default  reduce using rule 6 (global_decl)
 
 
 State 15
 
-    6 function_decl: return_type ID MK_LPAREN parameter_list . MK_RPAREN MK_SEMICOLON
-    8 function_def: return_type ID MK_LPAREN parameter_list . MK_RPAREN MK_LBRACE function_body MK_RBRACE
-   47 parameter_list: parameter_list . MK_COMMA parameter_decl
+   10 global_decl: control_flow .
 
-    MK_RPAREN  shift, and go to state 22
-    MK_COMMA   shift, and go to state 23
+    $default  reduce using rule 10 (global_decl)
 
 
 State 16
 
-   46 parameter_list: parameter_decl .
+    8 global_decl: horz_init_list . MK_SEMICOLON
 
-    $default  reduce using rule 46 (parameter_list)
+    MK_SEMICOLON  shift, and go to state 34
 
 
 State 17
 
-   48 parameter_decl: variable_decl .
+   44 horz_init_list: derived_id . hard_assignment
 
-    $default  reduce using rule 48 (parameter_decl)
+    OP_ASSIGN  shift, and go to state 35
+
+    hard_assignment  go to state 36
 
 
 State 18
 
-   49 parameter_decl: array_decl .
+   45 derived_id: id . MK_DOT id
+   46           | id .
 
-    $default  reduce using rule 49 (parameter_decl)
+    MK_DOT  shift, and go to state 37
+
+    $default  reduce using rule 46 (derived_id)
 
 
 State 19
 
-   50 variable_decl: type . ID
-   51 array_decl: type . ID array_braces array_braces_list
-   52           | type . ID blank_array_braces array_braces_list
+    7 global_decl: horz_decl_init_list . MK_SEMICOLON
 
-    ID  shift, and go to state 24
+    MK_SEMICOLON  shift, and go to state 38
 
 
 State 20
 
-    9 function_def: return_type ID MK_LPAREN MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+    9 global_decl: function_call . MK_SEMICOLON
 
-    $default  reduce using rule 12 (statement_list)
-
-    function_body   go to state 25
-    statement_list  go to state 26
+    MK_SEMICOLON  shift, and go to state 39
 
 
 State 21
 
-    7 function_decl: return_type ID MK_LPAREN MK_RPAREN MK_SEMICOLON .
+   50 horz_decl_init_list: parameter_decl . assignment more_horz_param_list
+   51                    | parameter_decl . assignment
 
-    $default  reduce using rule 7 (function_decl)
+    OP_ASSIGN  shift, and go to state 35
+
+    $default  reduce using rule 55 (assignment)
+
+    assignment       go to state 40
+    hard_assignment  go to state 41
 
 
 State 22
 
-    6 function_decl: return_type ID MK_LPAREN parameter_list MK_RPAREN . MK_SEMICOLON
-    8 function_def: return_type ID MK_LPAREN parameter_list MK_RPAREN . MK_LBRACE function_body MK_RBRACE
+   79 parameter_decl: variable_decl .
 
-    MK_LBRACE     shift, and go to state 27
-    MK_SEMICOLON  shift, and go to state 28
+    $default  reduce using rule 79 (parameter_decl)
 
 
 State 23
 
-   47 parameter_list: parameter_list MK_COMMA . parameter_decl
+   80 parameter_decl: array_decl .
 
-    INT    shift, and go to state 5
-    FLOAT  shift, and go to state 6
-
-    parameter_decl  go to state 29
-    variable_decl   go to state 17
-    array_decl      go to state 18
-    type            go to state 19
+    $default  reduce using rule 80 (parameter_decl)
 
 
 State 24
 
-   50 variable_decl: type ID .
-   51 array_decl: type ID . array_braces array_braces_list
-   52           | type ID . blank_array_braces array_braces_list
+   11 function_decl: type . ID MK_LPAREN parameter_list MK_RPAREN
+   12              | type . ID MK_LPAREN MK_RPAREN
+   15 function_def: type . ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   16             | type . ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   81 variable_decl: type . ID
+   82 array_decl: type . ID array_braces array_braces_list
+   83           | type . ID blank_array_braces array_braces_list
 
-    MK_LB  shift, and go to state 30
-
-    $default  reduce using rule 50 (variable_decl)
-
-    array_braces        go to state 31
-    blank_array_braces  go to state 32
+    ID  shift, and go to state 42
 
 
 State 25
 
-    9 function_def: return_type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+   86 array_braces: MK_LB . CONST MK_RB
+   87             | MK_LB . ID MK_RB
+   88 blank_array_braces: MK_LB . MK_RB
 
-    MK_RBRACE  shift, and go to state 33
+    ID     shift, and go to state 43
+    CONST  shift, and go to state 44
+    MK_RB  shift, and go to state 45
 
 
 State 26
 
-   10 function_body: statement_list .
-   11 statement_list: statement_list . statement
+   71 function_call: ID MK_LPAREN . MK_RPAREN
+   72              | ID MK_LPAREN . argument_list MK_RPAREN
 
-    ID      shift, and go to state 34
-    INT     shift, and go to state 5
-    FLOAT   shift, and go to state 6
-    RETURN  shift, and go to state 35
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 47
+    MK_RPAREN  shift, and go to state 48
 
-    $default  reduce using rule 10 (function_body)
-
-    statement            go to state 36
-    return_statement     go to state 37
-    horz_init_list       go to state 38
-    derived_id           go to state 39
-    id                   go to state 40
-    horz_decl_init_list  go to state 41
-    function_call        go to state 42
-    parameter_decl       go to state 43
-    variable_decl        go to state 17
-    array_decl           go to state 18
-    type                 go to state 19
+    id             go to state 49
+    argument_list  go to state 50
+    argument       go to state 51
 
 
 State 27
 
-    8 function_def: return_type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+   48 id: ID array_braces . array_braces_list
 
-    $default  reduce using rule 12 (statement_list)
+    $default  reduce using rule 85 (array_braces_list)
 
-    function_body   go to state 44
-    statement_list  go to state 26
+    array_braces_list  go to state 52
 
 
 State 28
 
-    6 function_decl: return_type ID MK_LPAREN parameter_list MK_RPAREN MK_SEMICOLON .
+   49 id: ID blank_array_braces . array_braces_list
 
-    $default  reduce using rule 6 (function_decl)
+    $default  reduce using rule 85 (array_braces_list)
+
+    array_braces_list  go to state 53
 
 
 State 29
 
-   47 parameter_list: parameter_list MK_COMMA parameter_decl .
+   13 function_decl: VOID ID . MK_LPAREN parameter_list MK_RPAREN
+   14              | VOID ID . MK_LPAREN MK_RPAREN
+   17 function_def: VOID ID . MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   18             | VOID ID . MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-    $default  reduce using rule 47 (parameter_list)
+    MK_LPAREN  shift, and go to state 54
 
 
 State 30
 
-   55 array_braces: MK_LB . CONST MK_RB
-   56 blank_array_braces: MK_LB . MK_RB
+   29 control_flow: IF MK_LPAREN . control_arguments MK_RPAREN statement
+   30             | IF MK_LPAREN . control_arguments MK_RPAREN statement ELSE statement
+   31             | IF MK_LPAREN . control_arguments MK_RPAREN statement ELSE MK_LBRACE function_body MK_RBRACE
+   32             | IF MK_LPAREN . control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   33             | IF MK_LPAREN . control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE statement
+   34             | IF MK_LPAREN . control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
 
-    CONST  shift, and go to state 45
-    MK_RB  shift, and go to state 46
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 55
+    INT        shift, and go to state 7
+    FLOAT      shift, and go to state 8
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
+
+    control_arguments     go to state 70
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
 
 
 State 31
 
-   51 array_decl: type ID array_braces . array_braces_list
+   27 control_flow: WHILE MK_LPAREN . control_arguments MK_RPAREN statement
+   28             | WHILE MK_LPAREN . control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-    $default  reduce using rule 54 (array_braces_list)
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 55
+    INT        shift, and go to state 7
+    FLOAT      shift, and go to state 8
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
 
-    array_braces_list  go to state 47
+    control_arguments     go to state 81
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
 
 
 State 32
 
-   52 array_decl: type ID blank_array_braces . array_braces_list
+   35 control_flow: FOR MK_LPAREN . control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN statement
+   36             | FOR MK_LPAREN . control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-    $default  reduce using rule 54 (array_braces_list)
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 55
+    INT        shift, and go to state 7
+    FLOAT      shift, and go to state 8
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
 
-    array_braces_list  go to state 48
+    control_arguments     go to state 82
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
 
 
 State 33
 
-    9 function_def: return_type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+    5 global_decl: function_decl MK_SEMICOLON .
 
-    $default  reduce using rule 9 (function_def)
+    $default  reduce using rule 5 (global_decl)
 
 
 State 34
 
-   24 id: ID .
-   25   | ID . array_braces array_braces_list
-   26   | ID . blank_array_braces array_braces_list
-   43 function_call: ID . MK_LPAREN MK_RPAREN
+    8 global_decl: horz_init_list MK_SEMICOLON .
 
-    MK_LB      shift, and go to state 30
-    MK_LPAREN  shift, and go to state 49
-
-    $default  reduce using rule 24 (id)
-
-    array_braces        go to state 50
-    blank_array_braces  go to state 51
+    $default  reduce using rule 8 (global_decl)
 
 
 State 35
 
-   17 return_statement: RETURN . sign CONST MK_SEMICOLON
-   18                 | RETURN . CONST MK_SEMICOLON
-   19                 | RETURN . sign id MK_SEMICOLON
-   20                 | RETURN . id MK_SEMICOLON
+   56 hard_assignment: OP_ASSIGN . function_call
+   57                | OP_ASSIGN . expression_list_list
 
-    ID        shift, and go to state 52
-    CONST     shift, and go to state 53
-    OP_PLUS   shift, and go to state 54
-    OP_MINUS  shift, and go to state 55
+    ID         shift, and go to state 5
+    CONST      shift, and go to state 55
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
 
-    id    go to state 56
-    sign  go to state 57
+    derived_id            go to state 83
+    id                    go to state 18
+    expression_list_list  go to state 84
+    expression_list       go to state 75
+    expression            go to state 76
+    function_call         go to state 85
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
 
 
 State 36
 
-   11 statement_list: statement_list statement .
+   44 horz_init_list: derived_id hard_assignment .
 
-    $default  reduce using rule 11 (statement_list)
+    $default  reduce using rule 44 (horz_init_list)
 
 
 State 37
 
-   15 statement: return_statement .
+   45 derived_id: id MK_DOT . id
 
-    $default  reduce using rule 15 (statement)
+    ID  shift, and go to state 46
+
+    id  go to state 86
 
 
 State 38
 
-   14 statement: horz_init_list .
+    7 global_decl: horz_decl_init_list MK_SEMICOLON .
 
-    $default  reduce using rule 14 (statement)
+    $default  reduce using rule 7 (global_decl)
 
 
 State 39
 
-   21 horz_init_list: derived_id . assignment MK_SEMICOLON
+    9 global_decl: function_call MK_SEMICOLON .
 
-    OP_ASSIGN  shift, and go to state 58
-
-    $default  reduce using rule 33 (assignment)
-
-    assignment  go to state 59
+    $default  reduce using rule 9 (global_decl)
 
 
 State 40
 
-   22 derived_id: id . MK_DOT id
-   23           | id .
+   50 horz_decl_init_list: parameter_decl assignment . more_horz_param_list
+   51                    | parameter_decl assignment .
 
-    MK_DOT  shift, and go to state 60
+    MK_COMMA  shift, and go to state 87
 
-    $default  reduce using rule 23 (derived_id)
+    $default  reduce using rule 51 (horz_decl_init_list)
+
+    more_horz_param_list  go to state 88
 
 
 State 41
 
-   13 statement: horz_decl_init_list .
+   54 assignment: hard_assignment .
 
-    $default  reduce using rule 13 (statement)
+    $default  reduce using rule 54 (assignment)
 
 
 State 42
 
-   16 statement: function_call . MK_SEMICOLON
+   11 function_decl: type ID . MK_LPAREN parameter_list MK_RPAREN
+   12              | type ID . MK_LPAREN MK_RPAREN
+   15 function_def: type ID . MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   16             | type ID . MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   81 variable_decl: type ID .
+   82 array_decl: type ID . array_braces array_braces_list
+   83           | type ID . blank_array_braces array_braces_list
 
-    MK_SEMICOLON  shift, and go to state 61
+    MK_LB      shift, and go to state 25
+    MK_LPAREN  shift, and go to state 89
+
+    $default  reduce using rule 81 (variable_decl)
+
+    array_braces        go to state 90
+    blank_array_braces  go to state 91
 
 
 State 43
 
-   27 horz_decl_init_list: parameter_decl . assignment more_horz_param_list MK_SEMICOLON
-   28                    | parameter_decl . assignment MK_SEMICOLON
+   87 array_braces: MK_LB ID . MK_RB
 
-    OP_ASSIGN  shift, and go to state 58
-
-    $default  reduce using rule 33 (assignment)
-
-    assignment  go to state 62
+    MK_RB  shift, and go to state 92
 
 
 State 44
 
-    8 function_def: return_type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+   86 array_braces: MK_LB CONST . MK_RB
 
-    MK_RBRACE  shift, and go to state 63
+    MK_RB  shift, and go to state 93
 
 
 State 45
 
-   55 array_braces: MK_LB CONST . MK_RB
+   88 blank_array_braces: MK_LB MK_RB .
 
-    MK_RB  shift, and go to state 64
+    $default  reduce using rule 88 (blank_array_braces)
 
 
 State 46
 
-   56 blank_array_braces: MK_LB MK_RB .
+   47 id: ID .
+   48   | ID . array_braces array_braces_list
+   49   | ID . blank_array_braces array_braces_list
 
-    $default  reduce using rule 56 (blank_array_braces)
+    MK_LB  shift, and go to state 25
+
+    $default  reduce using rule 47 (id)
+
+    array_braces        go to state 27
+    blank_array_braces  go to state 28
 
 
 State 47
 
-   51 array_decl: type ID array_braces array_braces_list .
-   53 array_braces_list: array_braces_list . array_braces
+   76 argument: CONST .
 
-    MK_LB  shift, and go to state 65
-
-    $default  reduce using rule 51 (array_decl)
-
-    array_braces  go to state 66
+    $default  reduce using rule 76 (argument)
 
 
 State 48
 
-   52 array_decl: type ID blank_array_braces array_braces_list .
-   53 array_braces_list: array_braces_list . array_braces
+   71 function_call: ID MK_LPAREN MK_RPAREN .
 
-    MK_LB  shift, and go to state 65
-
-    $default  reduce using rule 52 (array_decl)
-
-    array_braces  go to state 66
+    $default  reduce using rule 71 (function_call)
 
 
 State 49
 
-   43 function_call: ID MK_LPAREN . MK_RPAREN
+   75 argument: id .
 
-    MK_RPAREN  shift, and go to state 67
+    $default  reduce using rule 75 (argument)
 
 
 State 50
 
-   25 id: ID array_braces . array_braces_list
+   72 function_call: ID MK_LPAREN argument_list . MK_RPAREN
+   74 argument_list: argument_list . MK_COMMA argument
 
-    $default  reduce using rule 54 (array_braces_list)
-
-    array_braces_list  go to state 68
+    MK_RPAREN  shift, and go to state 94
+    MK_COMMA   shift, and go to state 95
 
 
 State 51
 
-   26 id: ID blank_array_braces . array_braces_list
+   73 argument_list: argument .
 
-    $default  reduce using rule 54 (array_braces_list)
-
-    array_braces_list  go to state 69
+    $default  reduce using rule 73 (argument_list)
 
 
 State 52
 
-   24 id: ID .
-   25   | ID . array_braces array_braces_list
-   26   | ID . blank_array_braces array_braces_list
+   48 id: ID array_braces array_braces_list .
+   84 array_braces_list: array_braces_list . array_braces
 
-    MK_LB  shift, and go to state 30
+    MK_LB  shift, and go to state 96
 
-    $default  reduce using rule 24 (id)
+    $default  reduce using rule 48 (id)
 
-    array_braces        go to state 50
-    blank_array_braces  go to state 51
+    array_braces  go to state 97
 
 
 State 53
 
-   18 return_statement: RETURN CONST . MK_SEMICOLON
+   49 id: ID blank_array_braces array_braces_list .
+   84 array_braces_list: array_braces_list . array_braces
 
-    MK_SEMICOLON  shift, and go to state 70
+    MK_LB  shift, and go to state 96
+
+    $default  reduce using rule 49 (id)
+
+    array_braces  go to state 97
 
 
 State 54
 
-   59 sign: OP_PLUS .
+   13 function_decl: VOID ID MK_LPAREN . parameter_list MK_RPAREN
+   14              | VOID ID MK_LPAREN . MK_RPAREN
+   17 function_def: VOID ID MK_LPAREN . parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   18             | VOID ID MK_LPAREN . MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-    $default  reduce using rule 59 (sign)
+    INT        shift, and go to state 7
+    FLOAT      shift, and go to state 8
+    MK_RPAREN  shift, and go to state 98
+
+    parameter_list  go to state 99
+    parameter_decl  go to state 100
+    variable_decl   go to state 22
+    array_decl      go to state 23
+    type            go to state 77
 
 
 State 55
 
-   60 sign: OP_MINUS .
+   58 expression_list_list: CONST .
+   59                     | CONST . expression_list
 
-    $default  reduce using rule 60 (sign)
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
+
+    $default  reduce using rule 58 (expression_list_list)
+
+    expression_list   go to state 101
+    expression        go to state 76
+    sign              go to state 78
+    arithmetic_units  go to state 79
+    binary_units      go to state 80
 
 
 State 56
 
-   20 return_statement: RETURN id . MK_SEMICOLON
+   98 binary_units: OP_OR .
 
-    MK_SEMICOLON  shift, and go to state 71
+    $default  reduce using rule 98 (binary_units)
 
 
 State 57
 
-   17 return_statement: RETURN sign . CONST MK_SEMICOLON
-   19                 | RETURN sign . id MK_SEMICOLON
+   99 binary_units: OP_AND .
 
-    ID     shift, and go to state 52
-    CONST  shift, and go to state 72
-
-    id  go to state 73
+    $default  reduce using rule 99 (binary_units)
 
 
 State 58
 
-   31 assignment: OP_ASSIGN . function_call
-   32           | OP_ASSIGN . expression_list_list
+   93 sign: OP_NOT .
 
-    ID         shift, and go to state 34
-    CONST      shift, and go to state 74
-    OP_PLUS    shift, and go to state 54
-    OP_MINUS   shift, and go to state 55
-    OP_TIMES   shift, and go to state 75
-    OP_DIVIDE  shift, and go to state 76
-
-    id                    go to state 77
-    expression_list_list  go to state 78
-    expression_list       go to state 79
-    function_call         go to state 80
-    sign                  go to state 81
-    arithmetic_units      go to state 82
+    $default  reduce using rule 93 (sign)
 
 
 State 59
 
-   21 horz_init_list: derived_id assignment . MK_SEMICOLON
+  100 binary_units: OP_EQ .
 
-    MK_SEMICOLON  shift, and go to state 83
+    $default  reduce using rule 100 (binary_units)
 
 
 State 60
 
-   22 derived_id: id MK_DOT . id
+  101 binary_units: OP_NE .
 
-    ID  shift, and go to state 52
-
-    id  go to state 84
+    $default  reduce using rule 101 (binary_units)
 
 
 State 61
 
-   16 statement: function_call MK_SEMICOLON .
+  103 binary_units: OP_GT .
 
-    $default  reduce using rule 16 (statement)
+    $default  reduce using rule 103 (binary_units)
 
 
 State 62
 
-   27 horz_decl_init_list: parameter_decl assignment . more_horz_param_list MK_SEMICOLON
-   28                    | parameter_decl assignment . MK_SEMICOLON
+  102 binary_units: OP_LT .
 
-    MK_COMMA      shift, and go to state 85
-    MK_SEMICOLON  shift, and go to state 86
-
-    more_horz_param_list  go to state 87
+    $default  reduce using rule 102 (binary_units)
 
 
 State 63
 
-    8 function_def: return_type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+  105 binary_units: OP_GE .
 
-    $default  reduce using rule 8 (function_def)
+    $default  reduce using rule 105 (binary_units)
 
 
 State 64
 
-   55 array_braces: MK_LB CONST MK_RB .
+  104 binary_units: OP_LE .
 
-    $default  reduce using rule 55 (array_braces)
+    $default  reduce using rule 104 (binary_units)
 
 
 State 65
 
-   55 array_braces: MK_LB . CONST MK_RB
+   91 sign: OP_PLUS .
 
-    CONST  shift, and go to state 45
+    $default  reduce using rule 91 (sign)
 
 
 State 66
 
-   53 array_braces_list: array_braces_list array_braces .
+   92 sign: OP_MINUS .
 
-    $default  reduce using rule 53 (array_braces_list)
+    $default  reduce using rule 92 (sign)
 
 
 State 67
 
-   43 function_call: ID MK_LPAREN MK_RPAREN .
+   95 arithmetic_units: OP_TIMES .
 
-    $default  reduce using rule 43 (function_call)
+    $default  reduce using rule 95 (arithmetic_units)
 
 
 State 68
 
-   25 id: ID array_braces array_braces_list .
-   53 array_braces_list: array_braces_list . array_braces
+   96 arithmetic_units: OP_DIVIDE .
 
-    MK_LB  shift, and go to state 65
-
-    $default  reduce using rule 25 (id)
-
-    array_braces  go to state 66
+    $default  reduce using rule 96 (arithmetic_units)
 
 
 State 69
 
-   26 id: ID blank_array_braces array_braces_list .
-   53 array_braces_list: array_braces_list . array_braces
+   68 expression: MK_LPAREN . expression_list_list MK_RPAREN
 
-    MK_LB  shift, and go to state 65
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 55
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
 
-    $default  reduce using rule 26 (id)
-
-    array_braces  go to state 66
+    derived_id            go to state 83
+    id                    go to state 18
+    expression_list_list  go to state 102
+    expression_list       go to state 75
+    expression            go to state 76
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
 
 
 State 70
 
-   18 return_statement: RETURN CONST MK_SEMICOLON .
+   29 control_flow: IF MK_LPAREN control_arguments . MK_RPAREN statement
+   30             | IF MK_LPAREN control_arguments . MK_RPAREN statement ELSE statement
+   31             | IF MK_LPAREN control_arguments . MK_RPAREN statement ELSE MK_LBRACE function_body MK_RBRACE
+   32             | IF MK_LPAREN control_arguments . MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   33             | IF MK_LPAREN control_arguments . MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE statement
+   34             | IF MK_LPAREN control_arguments . MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
 
-    $default  reduce using rule 18 (return_statement)
+    MK_RPAREN  shift, and go to state 103
 
 
 State 71
 
-   20 return_statement: RETURN id MK_SEMICOLON .
+   38 control_arguments: horz_init_list .
 
-    $default  reduce using rule 20 (return_statement)
+    $default  reduce using rule 38 (control_arguments)
 
 
 State 72
 
-   17 return_statement: RETURN sign CONST . MK_SEMICOLON
+   44 horz_init_list: derived_id . hard_assignment
+   60 expression_list_list: derived_id . expression_list
+   62                     | derived_id .
 
-    MK_SEMICOLON  shift, and go to state 88
+    OP_ASSIGN  shift, and go to state 35
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
+
+    $default  reduce using rule 62 (expression_list_list)
+
+    hard_assignment   go to state 36
+    expression_list   go to state 104
+    expression        go to state 76
+    sign              go to state 78
+    arithmetic_units  go to state 79
+    binary_units      go to state 80
 
 
 State 73
 
-   19 return_statement: RETURN sign id . MK_SEMICOLON
+   39 control_arguments: horz_decl_init_list .
 
-    MK_SEMICOLON  shift, and go to state 89
+    $default  reduce using rule 39 (control_arguments)
 
 
 State 74
 
-   34 expression_list_list: CONST .
-   35                     | CONST . expression_list
+   37 control_arguments: expression_list_list .
 
-    OP_PLUS    shift, and go to state 54
-    OP_MINUS   shift, and go to state 55
-    OP_TIMES   shift, and go to state 75
-    OP_DIVIDE  shift, and go to state 76
-
-    $default  reduce using rule 34 (expression_list_list)
-
-    expression_list   go to state 90
-    sign              go to state 81
-    arithmetic_units  go to state 82
+    $default  reduce using rule 37 (control_arguments)
 
 
 State 75
 
-   62 arithmetic_units: OP_TIMES .
+   61 expression_list_list: expression_list .
 
-    $default  reduce using rule 62 (arithmetic_units)
+    $default  reduce using rule 61 (expression_list_list)
 
 
 State 76
 
-   63 arithmetic_units: OP_DIVIDE .
+   63 expression_list: expression . expression_list
+   64                | expression .
 
-    $default  reduce using rule 63 (arithmetic_units)
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
+
+    $default  reduce using rule 64 (expression_list)
+
+    expression_list   go to state 105
+    expression        go to state 76
+    sign              go to state 78
+    arithmetic_units  go to state 79
+    binary_units      go to state 80
 
 
 State 77
 
-   36 expression_list_list: id . expression_list
+   81 variable_decl: type . ID
+   82 array_decl: type . ID array_braces array_braces_list
+   83           | type . ID blank_array_braces array_braces_list
 
-    OP_PLUS    shift, and go to state 54
-    OP_MINUS   shift, and go to state 55
-    OP_TIMES   shift, and go to state 75
-    OP_DIVIDE  shift, and go to state 76
-
-    expression_list   go to state 91
-    sign              go to state 81
-    arithmetic_units  go to state 82
+    ID  shift, and go to state 106
 
 
 State 78
 
-   32 assignment: OP_ASSIGN expression_list_list .
+   94 arithmetic_units: sign .
 
-    $default  reduce using rule 32 (assignment)
+    $default  reduce using rule 94 (arithmetic_units)
 
 
 State 79
 
-   37 expression_list_list: expression_list .
+   65 expression: arithmetic_units . primary
+   66           | arithmetic_units .
+   67           | arithmetic_units . MK_LPAREN expression_list_list MK_RPAREN
 
-    $default  reduce using rule 37 (expression_list_list)
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 107
+    MK_LPAREN  shift, and go to state 108
+
+    $default  reduce using rule 66 (expression)
+
+    id       go to state 109
+    primary  go to state 110
 
 
 State 80
 
-   31 assignment: OP_ASSIGN function_call .
+   97 arithmetic_units: binary_units .
 
-    $default  reduce using rule 31 (assignment)
+    $default  reduce using rule 97 (arithmetic_units)
 
 
 State 81
 
-   61 arithmetic_units: sign .
+   27 control_flow: WHILE MK_LPAREN control_arguments . MK_RPAREN statement
+   28             | WHILE MK_LPAREN control_arguments . MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-    $default  reduce using rule 61 (arithmetic_units)
+    MK_RPAREN  shift, and go to state 111
 
 
 State 82
 
-   38 expression_list: arithmetic_units . primary expression_list
-   39                | arithmetic_units . primary
+   35 control_flow: FOR MK_LPAREN control_arguments . MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN statement
+   36             | FOR MK_LPAREN control_arguments . MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-    ID         shift, and go to state 52
-    CONST      shift, and go to state 92
-    MK_LPAREN  shift, and go to state 93
-
-    id       go to state 94
-    primary  go to state 95
+    MK_SEMICOLON  shift, and go to state 112
 
 
 State 83
 
-   21 horz_init_list: derived_id assignment MK_SEMICOLON .
+   60 expression_list_list: derived_id . expression_list
+   62                     | derived_id .
 
-    $default  reduce using rule 21 (horz_init_list)
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
+
+    $default  reduce using rule 62 (expression_list_list)
+
+    expression_list   go to state 104
+    expression        go to state 76
+    sign              go to state 78
+    arithmetic_units  go to state 79
+    binary_units      go to state 80
 
 
 State 84
 
-   22 derived_id: id MK_DOT id .
+   57 hard_assignment: OP_ASSIGN expression_list_list .
 
-    $default  reduce using rule 22 (derived_id)
+    $default  reduce using rule 57 (hard_assignment)
 
 
 State 85
 
-   29 more_horz_param_list: MK_COMMA . ID assignment more_horz_param_list
-   30                     | MK_COMMA . ID assignment
+   56 hard_assignment: OP_ASSIGN function_call .
 
-    ID  shift, and go to state 96
+    $default  reduce using rule 56 (hard_assignment)
 
 
 State 86
 
-   28 horz_decl_init_list: parameter_decl assignment MK_SEMICOLON .
+   45 derived_id: id MK_DOT id .
 
-    $default  reduce using rule 28 (horz_decl_init_list)
+    $default  reduce using rule 45 (derived_id)
 
 
 State 87
 
-   27 horz_decl_init_list: parameter_decl assignment more_horz_param_list . MK_SEMICOLON
+   52 more_horz_param_list: MK_COMMA . ID assignment more_horz_param_list
+   53                     | MK_COMMA . ID assignment
 
-    MK_SEMICOLON  shift, and go to state 97
+    ID  shift, and go to state 113
 
 
 State 88
 
-   17 return_statement: RETURN sign CONST MK_SEMICOLON .
+   50 horz_decl_init_list: parameter_decl assignment more_horz_param_list .
 
-    $default  reduce using rule 17 (return_statement)
+    $default  reduce using rule 50 (horz_decl_init_list)
 
 
 State 89
 
-   19 return_statement: RETURN sign id MK_SEMICOLON .
+   11 function_decl: type ID MK_LPAREN . parameter_list MK_RPAREN
+   12              | type ID MK_LPAREN . MK_RPAREN
+   15 function_def: type ID MK_LPAREN . parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   16             | type ID MK_LPAREN . MK_RPAREN MK_LBRACE function_body MK_RBRACE
 
-    $default  reduce using rule 19 (return_statement)
+    INT        shift, and go to state 7
+    FLOAT      shift, and go to state 8
+    MK_RPAREN  shift, and go to state 114
+
+    parameter_list  go to state 115
+    parameter_decl  go to state 100
+    variable_decl   go to state 22
+    array_decl      go to state 23
+    type            go to state 77
 
 
 State 90
 
-   35 expression_list_list: CONST expression_list .
+   82 array_decl: type ID array_braces . array_braces_list
 
-    $default  reduce using rule 35 (expression_list_list)
+    $default  reduce using rule 85 (array_braces_list)
+
+    array_braces_list  go to state 116
 
 
 State 91
 
-   36 expression_list_list: id expression_list .
+   83 array_decl: type ID blank_array_braces . array_braces_list
 
-    $default  reduce using rule 36 (expression_list_list)
+    $default  reduce using rule 85 (array_braces_list)
+
+    array_braces_list  go to state 117
 
 
 State 92
 
-   41 primary: CONST .
+   87 array_braces: MK_LB ID MK_RB .
 
-    $default  reduce using rule 41 (primary)
+    $default  reduce using rule 87 (array_braces)
 
 
 State 93
 
-   42 primary: MK_LPAREN . expression_list_list MK_RPAREN
+   86 array_braces: MK_LB CONST MK_RB .
 
-    ID         shift, and go to state 52
-    CONST      shift, and go to state 74
-    OP_PLUS    shift, and go to state 54
-    OP_MINUS   shift, and go to state 55
-    OP_TIMES   shift, and go to state 75
-    OP_DIVIDE  shift, and go to state 76
-
-    id                    go to state 77
-    expression_list_list  go to state 98
-    expression_list       go to state 79
-    sign                  go to state 81
-    arithmetic_units      go to state 82
+    $default  reduce using rule 86 (array_braces)
 
 
 State 94
 
-   40 primary: id .
+   72 function_call: ID MK_LPAREN argument_list MK_RPAREN .
 
-    $default  reduce using rule 40 (primary)
+    $default  reduce using rule 72 (function_call)
 
 
 State 95
 
-   38 expression_list: arithmetic_units primary . expression_list
-   39                | arithmetic_units primary .
+   74 argument_list: argument_list MK_COMMA . argument
 
-    OP_PLUS    shift, and go to state 54
-    OP_MINUS   shift, and go to state 55
-    OP_TIMES   shift, and go to state 75
-    OP_DIVIDE  shift, and go to state 76
+    ID     shift, and go to state 46
+    CONST  shift, and go to state 47
 
-    $default  reduce using rule 39 (expression_list)
-
-    expression_list   go to state 99
-    sign              go to state 81
-    arithmetic_units  go to state 82
+    id        go to state 49
+    argument  go to state 118
 
 
 State 96
 
-   29 more_horz_param_list: MK_COMMA ID . assignment more_horz_param_list
-   30                     | MK_COMMA ID . assignment
+   86 array_braces: MK_LB . CONST MK_RB
+   87             | MK_LB . ID MK_RB
 
-    OP_ASSIGN  shift, and go to state 58
-
-    $default  reduce using rule 33 (assignment)
-
-    assignment  go to state 100
+    ID     shift, and go to state 43
+    CONST  shift, and go to state 44
 
 
 State 97
 
-   27 horz_decl_init_list: parameter_decl assignment more_horz_param_list MK_SEMICOLON .
+   84 array_braces_list: array_braces_list array_braces .
 
-    $default  reduce using rule 27 (horz_decl_init_list)
+    $default  reduce using rule 84 (array_braces_list)
 
 
 State 98
 
-   42 primary: MK_LPAREN expression_list_list . MK_RPAREN
+   14 function_decl: VOID ID MK_LPAREN MK_RPAREN .
+   18 function_def: VOID ID MK_LPAREN MK_RPAREN . MK_LBRACE function_body MK_RBRACE
 
-    MK_RPAREN  shift, and go to state 101
+    MK_LBRACE  shift, and go to state 119
+
+    $default  reduce using rule 14 (function_decl)
 
 
 State 99
 
-   38 expression_list: arithmetic_units primary expression_list .
+   13 function_decl: VOID ID MK_LPAREN parameter_list . MK_RPAREN
+   17 function_def: VOID ID MK_LPAREN parameter_list . MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   78 parameter_list: parameter_list . MK_COMMA parameter_decl
 
-    $default  reduce using rule 38 (expression_list)
+    MK_RPAREN  shift, and go to state 120
+    MK_COMMA   shift, and go to state 121
 
 
 State 100
 
-   29 more_horz_param_list: MK_COMMA ID assignment . more_horz_param_list
-   30                     | MK_COMMA ID assignment .
+   77 parameter_list: parameter_decl .
 
-    MK_COMMA  shift, and go to state 85
-
-    $default  reduce using rule 30 (more_horz_param_list)
-
-    more_horz_param_list  go to state 102
+    $default  reduce using rule 77 (parameter_list)
 
 
 State 101
 
-   42 primary: MK_LPAREN expression_list_list MK_RPAREN .
+   59 expression_list_list: CONST expression_list .
 
-    $default  reduce using rule 42 (primary)
+    $default  reduce using rule 59 (expression_list_list)
 
 
 State 102
 
-   29 more_horz_param_list: MK_COMMA ID assignment more_horz_param_list .
+   68 expression: MK_LPAREN expression_list_list . MK_RPAREN
 
-    $default  reduce using rule 29 (more_horz_param_list)
+    MK_RPAREN  shift, and go to state 122
+
+
+State 103
+
+   29 control_flow: IF MK_LPAREN control_arguments MK_RPAREN . statement
+   30             | IF MK_LPAREN control_arguments MK_RPAREN . statement ELSE statement
+   31             | IF MK_LPAREN control_arguments MK_RPAREN . statement ELSE MK_LBRACE function_body MK_RBRACE
+   32             | IF MK_LPAREN control_arguments MK_RPAREN . MK_LBRACE function_body MK_RBRACE
+   33             | IF MK_LPAREN control_arguments MK_RPAREN . MK_LBRACE function_body MK_RBRACE ELSE statement
+   34             | IF MK_LPAREN control_arguments MK_RPAREN . MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
+
+    ID            shift, and go to state 5
+    CONST         shift, and go to state 55
+    INT           shift, and go to state 7
+    FLOAT         shift, and go to state 8
+    IF            shift, and go to state 9
+    WHILE         shift, and go to state 10
+    FOR           shift, and go to state 11
+    OP_OR         shift, and go to state 56
+    OP_AND        shift, and go to state 57
+    OP_NOT        shift, and go to state 58
+    OP_EQ         shift, and go to state 59
+    OP_NE         shift, and go to state 60
+    OP_GT         shift, and go to state 61
+    OP_LT         shift, and go to state 62
+    OP_GE         shift, and go to state 63
+    OP_LE         shift, and go to state 64
+    OP_PLUS       shift, and go to state 65
+    OP_MINUS      shift, and go to state 66
+    OP_TIMES      shift, and go to state 67
+    OP_DIVIDE     shift, and go to state 68
+    MK_LPAREN     shift, and go to state 69
+    MK_LBRACE     shift, and go to state 123
+    MK_SEMICOLON  shift, and go to state 124
+    RETURN        shift, and go to state 125
+
+    statement             go to state 126
+    control_flow          go to state 127
+    control_arguments     go to state 128
+    return_statement      go to state 129
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    function_call         go to state 130
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 104
+
+   60 expression_list_list: derived_id expression_list .
+
+    $default  reduce using rule 60 (expression_list_list)
+
+
+State 105
+
+   63 expression_list: expression expression_list .
+
+    $default  reduce using rule 63 (expression_list)
+
+
+State 106
+
+   81 variable_decl: type ID .
+   82 array_decl: type ID . array_braces array_braces_list
+   83           | type ID . blank_array_braces array_braces_list
+
+    MK_LB  shift, and go to state 25
+
+    $default  reduce using rule 81 (variable_decl)
+
+    array_braces        go to state 90
+    blank_array_braces  go to state 91
+
+
+State 107
+
+   70 primary: CONST .
+
+    $default  reduce using rule 70 (primary)
+
+
+State 108
+
+   67 expression: arithmetic_units MK_LPAREN . expression_list_list MK_RPAREN
+
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 55
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
+
+    derived_id            go to state 83
+    id                    go to state 18
+    expression_list_list  go to state 131
+    expression_list       go to state 75
+    expression            go to state 76
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 109
+
+   69 primary: id .
+
+    $default  reduce using rule 69 (primary)
+
+
+State 110
+
+   65 expression: arithmetic_units primary .
+
+    $default  reduce using rule 65 (expression)
+
+
+State 111
+
+   27 control_flow: WHILE MK_LPAREN control_arguments MK_RPAREN . statement
+   28             | WHILE MK_LPAREN control_arguments MK_RPAREN . MK_LBRACE function_body MK_RBRACE
+
+    ID            shift, and go to state 5
+    CONST         shift, and go to state 55
+    INT           shift, and go to state 7
+    FLOAT         shift, and go to state 8
+    IF            shift, and go to state 9
+    WHILE         shift, and go to state 10
+    FOR           shift, and go to state 11
+    OP_OR         shift, and go to state 56
+    OP_AND        shift, and go to state 57
+    OP_NOT        shift, and go to state 58
+    OP_EQ         shift, and go to state 59
+    OP_NE         shift, and go to state 60
+    OP_GT         shift, and go to state 61
+    OP_LT         shift, and go to state 62
+    OP_GE         shift, and go to state 63
+    OP_LE         shift, and go to state 64
+    OP_PLUS       shift, and go to state 65
+    OP_MINUS      shift, and go to state 66
+    OP_TIMES      shift, and go to state 67
+    OP_DIVIDE     shift, and go to state 68
+    MK_LPAREN     shift, and go to state 69
+    MK_LBRACE     shift, and go to state 132
+    MK_SEMICOLON  shift, and go to state 124
+    RETURN        shift, and go to state 125
+
+    statement             go to state 133
+    control_flow          go to state 127
+    control_arguments     go to state 128
+    return_statement      go to state 129
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    function_call         go to state 130
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 112
+
+   35 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON . control_arguments MK_SEMICOLON control_arguments MK_RPAREN statement
+   36             | FOR MK_LPAREN control_arguments MK_SEMICOLON . control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 55
+    INT        shift, and go to state 7
+    FLOAT      shift, and go to state 8
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
+
+    control_arguments     go to state 134
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 113
+
+   52 more_horz_param_list: MK_COMMA ID . assignment more_horz_param_list
+   53                     | MK_COMMA ID . assignment
+
+    OP_ASSIGN  shift, and go to state 35
+
+    $default  reduce using rule 55 (assignment)
+
+    assignment       go to state 135
+    hard_assignment  go to state 41
+
+
+State 114
+
+   12 function_decl: type ID MK_LPAREN MK_RPAREN .
+   16 function_def: type ID MK_LPAREN MK_RPAREN . MK_LBRACE function_body MK_RBRACE
+
+    MK_LBRACE  shift, and go to state 136
+
+    $default  reduce using rule 12 (function_decl)
+
+
+State 115
+
+   11 function_decl: type ID MK_LPAREN parameter_list . MK_RPAREN
+   15 function_def: type ID MK_LPAREN parameter_list . MK_RPAREN MK_LBRACE function_body MK_RBRACE
+   78 parameter_list: parameter_list . MK_COMMA parameter_decl
+
+    MK_RPAREN  shift, and go to state 137
+    MK_COMMA   shift, and go to state 121
+
+
+State 116
+
+   82 array_decl: type ID array_braces array_braces_list .
+   84 array_braces_list: array_braces_list . array_braces
+
+    MK_LB  shift, and go to state 96
+
+    $default  reduce using rule 82 (array_decl)
+
+    array_braces  go to state 97
+
+
+State 117
+
+   83 array_decl: type ID blank_array_braces array_braces_list .
+   84 array_braces_list: array_braces_list . array_braces
+
+    MK_LB  shift, and go to state 96
+
+    $default  reduce using rule 83 (array_decl)
+
+    array_braces  go to state 97
+
+
+State 118
+
+   74 argument_list: argument_list MK_COMMA argument .
+
+    $default  reduce using rule 74 (argument_list)
+
+
+State 119
+
+   18 function_def: VOID ID MK_LPAREN MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 138
+    statement_list  go to state 139
+
+
+State 120
+
+   13 function_decl: VOID ID MK_LPAREN parameter_list MK_RPAREN .
+   17 function_def: VOID ID MK_LPAREN parameter_list MK_RPAREN . MK_LBRACE function_body MK_RBRACE
+
+    MK_LBRACE  shift, and go to state 140
+
+    $default  reduce using rule 13 (function_decl)
+
+
+State 121
+
+   78 parameter_list: parameter_list MK_COMMA . parameter_decl
+
+    INT    shift, and go to state 7
+    FLOAT  shift, and go to state 8
+
+    parameter_decl  go to state 141
+    variable_decl   go to state 22
+    array_decl      go to state 23
+    type            go to state 77
+
+
+State 122
+
+   68 expression: MK_LPAREN expression_list_list MK_RPAREN .
+
+    $default  reduce using rule 68 (expression)
+
+
+State 123
+
+   32 control_flow: IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+   33             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE . function_body MK_RBRACE ELSE statement
+   34             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE . function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 142
+    statement_list  go to state 139
+
+
+State 124
+
+   26 statement: MK_SEMICOLON .
+
+    $default  reduce using rule 26 (statement)
+
+
+State 125
+
+   40 return_statement: RETURN . sign CONST
+   41                 | RETURN . CONST
+   42                 | RETURN . sign id
+   43                 | RETURN . id
+
+    ID        shift, and go to state 46
+    CONST     shift, and go to state 143
+    OP_NOT    shift, and go to state 58
+    OP_PLUS   shift, and go to state 65
+    OP_MINUS  shift, and go to state 66
+
+    id    go to state 144
+    sign  go to state 145
+
+
+State 126
+
+   29 control_flow: IF MK_LPAREN control_arguments MK_RPAREN statement .
+   30             | IF MK_LPAREN control_arguments MK_RPAREN statement . ELSE statement
+   31             | IF MK_LPAREN control_arguments MK_RPAREN statement . ELSE MK_LBRACE function_body MK_RBRACE
+
+    ELSE  shift, and go to state 146
+
+    $default  reduce using rule 29 (control_flow)
+
+
+State 127
+
+   24 statement: control_flow .
+
+    $default  reduce using rule 24 (statement)
+
+
+State 128
+
+   25 statement: control_arguments . MK_SEMICOLON
+
+    MK_SEMICOLON  shift, and go to state 147
+
+
+State 129
+
+   22 statement: return_statement . MK_SEMICOLON
+
+    MK_SEMICOLON  shift, and go to state 148
+
+
+State 130
+
+   23 statement: function_call . MK_SEMICOLON
+
+    MK_SEMICOLON  shift, and go to state 149
+
+
+State 131
+
+   67 expression: arithmetic_units MK_LPAREN expression_list_list . MK_RPAREN
+
+    MK_RPAREN  shift, and go to state 150
+
+
+State 132
+
+   28 control_flow: WHILE MK_LPAREN control_arguments MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 151
+    statement_list  go to state 139
+
+
+State 133
+
+   27 control_flow: WHILE MK_LPAREN control_arguments MK_RPAREN statement .
+
+    $default  reduce using rule 27 (control_flow)
+
+
+State 134
+
+   35 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments . MK_SEMICOLON control_arguments MK_RPAREN statement
+   36             | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments . MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+
+    MK_SEMICOLON  shift, and go to state 152
+
+
+State 135
+
+   52 more_horz_param_list: MK_COMMA ID assignment . more_horz_param_list
+   53                     | MK_COMMA ID assignment .
+
+    MK_COMMA  shift, and go to state 87
+
+    $default  reduce using rule 53 (more_horz_param_list)
+
+    more_horz_param_list  go to state 153
+
+
+State 136
+
+   16 function_def: type ID MK_LPAREN MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 154
+    statement_list  go to state 139
+
+
+State 137
+
+   11 function_decl: type ID MK_LPAREN parameter_list MK_RPAREN .
+   15 function_def: type ID MK_LPAREN parameter_list MK_RPAREN . MK_LBRACE function_body MK_RBRACE
+
+    MK_LBRACE  shift, and go to state 155
+
+    $default  reduce using rule 11 (function_decl)
+
+
+State 138
+
+   18 function_def: VOID ID MK_LPAREN MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 156
+
+
+State 139
+
+   19 function_body: statement_list .
+   20 statement_list: statement_list . statement
+
+    ID            shift, and go to state 5
+    CONST         shift, and go to state 55
+    INT           shift, and go to state 7
+    FLOAT         shift, and go to state 8
+    IF            shift, and go to state 9
+    WHILE         shift, and go to state 10
+    FOR           shift, and go to state 11
+    OP_OR         shift, and go to state 56
+    OP_AND        shift, and go to state 57
+    OP_NOT        shift, and go to state 58
+    OP_EQ         shift, and go to state 59
+    OP_NE         shift, and go to state 60
+    OP_GT         shift, and go to state 61
+    OP_LT         shift, and go to state 62
+    OP_GE         shift, and go to state 63
+    OP_LE         shift, and go to state 64
+    OP_PLUS       shift, and go to state 65
+    OP_MINUS      shift, and go to state 66
+    OP_TIMES      shift, and go to state 67
+    OP_DIVIDE     shift, and go to state 68
+    MK_LPAREN     shift, and go to state 69
+    MK_SEMICOLON  shift, and go to state 124
+    RETURN        shift, and go to state 125
+
+    $default  reduce using rule 19 (function_body)
+
+    statement             go to state 157
+    control_flow          go to state 127
+    control_arguments     go to state 128
+    return_statement      go to state 129
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    function_call         go to state 130
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 140
+
+   17 function_def: VOID ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 158
+    statement_list  go to state 139
+
+
+State 141
+
+   78 parameter_list: parameter_list MK_COMMA parameter_decl .
+
+    $default  reduce using rule 78 (parameter_list)
+
+
+State 142
+
+   32 control_flow: IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+   33             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body . MK_RBRACE ELSE statement
+   34             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body . MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 159
+
+
+State 143
+
+   41 return_statement: RETURN CONST .
+
+    $default  reduce using rule 41 (return_statement)
+
+
+State 144
+
+   43 return_statement: RETURN id .
+
+    $default  reduce using rule 43 (return_statement)
+
+
+State 145
+
+   40 return_statement: RETURN sign . CONST
+   42                 | RETURN sign . id
+
+    ID     shift, and go to state 46
+    CONST  shift, and go to state 160
+
+    id  go to state 161
+
+
+State 146
+
+   30 control_flow: IF MK_LPAREN control_arguments MK_RPAREN statement ELSE . statement
+   31             | IF MK_LPAREN control_arguments MK_RPAREN statement ELSE . MK_LBRACE function_body MK_RBRACE
+
+    ID            shift, and go to state 5
+    CONST         shift, and go to state 55
+    INT           shift, and go to state 7
+    FLOAT         shift, and go to state 8
+    IF            shift, and go to state 9
+    WHILE         shift, and go to state 10
+    FOR           shift, and go to state 11
+    OP_OR         shift, and go to state 56
+    OP_AND        shift, and go to state 57
+    OP_NOT        shift, and go to state 58
+    OP_EQ         shift, and go to state 59
+    OP_NE         shift, and go to state 60
+    OP_GT         shift, and go to state 61
+    OP_LT         shift, and go to state 62
+    OP_GE         shift, and go to state 63
+    OP_LE         shift, and go to state 64
+    OP_PLUS       shift, and go to state 65
+    OP_MINUS      shift, and go to state 66
+    OP_TIMES      shift, and go to state 67
+    OP_DIVIDE     shift, and go to state 68
+    MK_LPAREN     shift, and go to state 69
+    MK_LBRACE     shift, and go to state 162
+    MK_SEMICOLON  shift, and go to state 124
+    RETURN        shift, and go to state 125
+
+    statement             go to state 163
+    control_flow          go to state 127
+    control_arguments     go to state 128
+    return_statement      go to state 129
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    function_call         go to state 130
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 147
+
+   25 statement: control_arguments MK_SEMICOLON .
+
+    $default  reduce using rule 25 (statement)
+
+
+State 148
+
+   22 statement: return_statement MK_SEMICOLON .
+
+    $default  reduce using rule 22 (statement)
+
+
+State 149
+
+   23 statement: function_call MK_SEMICOLON .
+
+    $default  reduce using rule 23 (statement)
+
+
+State 150
+
+   67 expression: arithmetic_units MK_LPAREN expression_list_list MK_RPAREN .
+
+    $default  reduce using rule 67 (expression)
+
+
+State 151
+
+   28 control_flow: WHILE MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 164
+
+
+State 152
+
+   35 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON . control_arguments MK_RPAREN statement
+   36             | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON . control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+
+    ID         shift, and go to state 46
+    CONST      shift, and go to state 55
+    INT        shift, and go to state 7
+    FLOAT      shift, and go to state 8
+    OP_OR      shift, and go to state 56
+    OP_AND     shift, and go to state 57
+    OP_NOT     shift, and go to state 58
+    OP_EQ      shift, and go to state 59
+    OP_NE      shift, and go to state 60
+    OP_GT      shift, and go to state 61
+    OP_LT      shift, and go to state 62
+    OP_GE      shift, and go to state 63
+    OP_LE      shift, and go to state 64
+    OP_PLUS    shift, and go to state 65
+    OP_MINUS   shift, and go to state 66
+    OP_TIMES   shift, and go to state 67
+    OP_DIVIDE  shift, and go to state 68
+    MK_LPAREN  shift, and go to state 69
+
+    control_arguments     go to state 165
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 153
+
+   52 more_horz_param_list: MK_COMMA ID assignment more_horz_param_list .
+
+    $default  reduce using rule 52 (more_horz_param_list)
+
+
+State 154
+
+   16 function_def: type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 166
+
+
+State 155
+
+   15 function_def: type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 167
+    statement_list  go to state 139
+
+
+State 156
+
+   18 function_def: VOID ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+
+    $default  reduce using rule 18 (function_def)
+
+
+State 157
+
+   20 statement_list: statement_list statement .
+
+    $default  reduce using rule 20 (statement_list)
+
+
+State 158
+
+   17 function_def: VOID ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 168
+
+
+State 159
+
+   32 control_flow: IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+   33             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE . ELSE statement
+   34             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE . ELSE MK_LBRACE function_body MK_RBRACE
+
+    ELSE  shift, and go to state 169
+
+    $default  reduce using rule 32 (control_flow)
+
+
+State 160
+
+   40 return_statement: RETURN sign CONST .
+
+    $default  reduce using rule 40 (return_statement)
+
+
+State 161
+
+   42 return_statement: RETURN sign id .
+
+    $default  reduce using rule 42 (return_statement)
+
+
+State 162
+
+   31 control_flow: IF MK_LPAREN control_arguments MK_RPAREN statement ELSE MK_LBRACE . function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 170
+    statement_list  go to state 139
+
+
+State 163
+
+   30 control_flow: IF MK_LPAREN control_arguments MK_RPAREN statement ELSE statement .
+
+    $default  reduce using rule 30 (control_flow)
+
+
+State 164
+
+   28 control_flow: WHILE MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+
+    $default  reduce using rule 28 (control_flow)
+
+
+State 165
+
+   35 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments . MK_RPAREN statement
+   36             | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments . MK_RPAREN MK_LBRACE function_body MK_RBRACE
+
+    MK_RPAREN  shift, and go to state 171
+
+
+State 166
+
+   16 function_def: type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+
+    $default  reduce using rule 16 (function_def)
+
+
+State 167
+
+   15 function_def: type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 172
+
+
+State 168
+
+   17 function_def: VOID ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+
+    $default  reduce using rule 17 (function_def)
+
+
+State 169
+
+   33 control_flow: IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE . statement
+   34             | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE . MK_LBRACE function_body MK_RBRACE
+
+    ID            shift, and go to state 5
+    CONST         shift, and go to state 55
+    INT           shift, and go to state 7
+    FLOAT         shift, and go to state 8
+    IF            shift, and go to state 9
+    WHILE         shift, and go to state 10
+    FOR           shift, and go to state 11
+    OP_OR         shift, and go to state 56
+    OP_AND        shift, and go to state 57
+    OP_NOT        shift, and go to state 58
+    OP_EQ         shift, and go to state 59
+    OP_NE         shift, and go to state 60
+    OP_GT         shift, and go to state 61
+    OP_LT         shift, and go to state 62
+    OP_GE         shift, and go to state 63
+    OP_LE         shift, and go to state 64
+    OP_PLUS       shift, and go to state 65
+    OP_MINUS      shift, and go to state 66
+    OP_TIMES      shift, and go to state 67
+    OP_DIVIDE     shift, and go to state 68
+    MK_LPAREN     shift, and go to state 69
+    MK_LBRACE     shift, and go to state 173
+    MK_SEMICOLON  shift, and go to state 124
+    RETURN        shift, and go to state 125
+
+    statement             go to state 174
+    control_flow          go to state 127
+    control_arguments     go to state 128
+    return_statement      go to state 129
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    function_call         go to state 130
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 170
+
+   31 control_flow: IF MK_LPAREN control_arguments MK_RPAREN statement ELSE MK_LBRACE function_body . MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 175
+
+
+State 171
+
+   35 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN . statement
+   36             | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN . MK_LBRACE function_body MK_RBRACE
+
+    ID            shift, and go to state 5
+    CONST         shift, and go to state 55
+    INT           shift, and go to state 7
+    FLOAT         shift, and go to state 8
+    IF            shift, and go to state 9
+    WHILE         shift, and go to state 10
+    FOR           shift, and go to state 11
+    OP_OR         shift, and go to state 56
+    OP_AND        shift, and go to state 57
+    OP_NOT        shift, and go to state 58
+    OP_EQ         shift, and go to state 59
+    OP_NE         shift, and go to state 60
+    OP_GT         shift, and go to state 61
+    OP_LT         shift, and go to state 62
+    OP_GE         shift, and go to state 63
+    OP_LE         shift, and go to state 64
+    OP_PLUS       shift, and go to state 65
+    OP_MINUS      shift, and go to state 66
+    OP_TIMES      shift, and go to state 67
+    OP_DIVIDE     shift, and go to state 68
+    MK_LPAREN     shift, and go to state 69
+    MK_LBRACE     shift, and go to state 176
+    MK_SEMICOLON  shift, and go to state 124
+    RETURN        shift, and go to state 125
+
+    statement             go to state 177
+    control_flow          go to state 127
+    control_arguments     go to state 128
+    return_statement      go to state 129
+    horz_init_list        go to state 71
+    derived_id            go to state 72
+    id                    go to state 18
+    horz_decl_init_list   go to state 73
+    expression_list_list  go to state 74
+    expression_list       go to state 75
+    expression            go to state 76
+    function_call         go to state 130
+    parameter_decl        go to state 21
+    variable_decl         go to state 22
+    array_decl            go to state 23
+    type                  go to state 77
+    sign                  go to state 78
+    arithmetic_units      go to state 79
+    binary_units          go to state 80
+
+
+State 172
+
+   15 function_def: type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+
+    $default  reduce using rule 15 (function_def)
+
+
+State 173
+
+   34 control_flow: IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE . function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 178
+    statement_list  go to state 139
+
+
+State 174
+
+   33 control_flow: IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE statement .
+
+    $default  reduce using rule 33 (control_flow)
+
+
+State 175
+
+   31 control_flow: IF MK_LPAREN control_arguments MK_RPAREN statement ELSE MK_LBRACE function_body MK_RBRACE .
+
+    $default  reduce using rule 31 (control_flow)
+
+
+State 176
+
+   36 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE . function_body MK_RBRACE
+
+    $default  reduce using rule 21 (statement_list)
+
+    function_body   go to state 179
+    statement_list  go to state 139
+
+
+State 177
+
+   35 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN statement .
+
+    $default  reduce using rule 35 (control_flow)
+
+
+State 178
+
+   34 control_flow: IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body . MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 180
+
+
+State 179
+
+   36 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body . MK_RBRACE
+
+    MK_RBRACE  shift, and go to state 181
+
+
+State 180
+
+   34 control_flow: IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE .
+
+    $default  reduce using rule 34 (control_flow)
+
+
+State 181
+
+   36 control_flow: FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE .
+
+    $default  reduce using rule 36 (control_flow)

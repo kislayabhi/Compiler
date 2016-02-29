@@ -1,8 +1,8 @@
 /*Test 4 */
-/* Can you handle unary operands? 
-unary operands include - (minus) and ! (NOT) */ 
+/* Can you handle unary operands?
+unary operands include - (minus) and ! (NOT) */
 
-typedef int myint;
+/*~~~typedef int myint;*/
 
 
 int negative(int a)
@@ -38,9 +38,9 @@ int main()
   int div, sum;
   int loopvar=0;
   float result;
-  myint n;
-  
-  
+  /*~~~~myint n;*/
+
+
 
   result = 4;
   while( n < result )
@@ -52,6 +52,7 @@ int main()
   for (loopvar = 1; loopvar <= n ; loopvar = loopvar + 1)
   {
     sum = sum + loopvar;
+    a=((1+(b+5)>=12));
   }
 
   write("enter a divider");
@@ -66,15 +67,15 @@ int main()
     }
     else
     {
-      arr[1] = negative_float(sum, 1.5);    
+      arr[1] = negative_float(sum, 1.5);
     }
   }
   else
   {
-    return 0; 
+    return 0;
   }
 
-  arr[2] = arr[0] * arr[1] + result + sum;  
+  arr[2] = arr[0] * arr[1] + result + sum;
 
   result = myfunc3(arr2, arr3[2]);
 
