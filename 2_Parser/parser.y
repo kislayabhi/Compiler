@@ -85,11 +85,22 @@ function_def            : type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE f
                         | type ID MK_LPAREN MK_RPAREN MK_LBRACE error MK_SEMICOLON {yyerrok;}
 */
                         ;
-struct_or_union_decl    : STRUCT id MK_LBRACE function_body MK_RBRACE struct_members
-                        | STRUCT MK_LBRACE function_body MK_RBRACE struct_members
-                        | STRUCT id MK_LBRACE function_body MK_RBRACE
-                        | STRUCT MK_LBRACE function_body MK_RBRACE
+struct_or_union_decl    : STRUCT id MK_LBRACE struct_material_list MK_RBRACE struct_members
+                        | STRUCT MK_LBRACE struct_material_list MK_RBRACE struct_members
+                        | STRUCT id MK_LBRACE struct_material_list MK_RBRACE
+                        | STRUCT MK_LBRACE struct_material_list MK_RBRACE
                         | STRUCT id struct_members
+                        | STRUCT id MK_LBRACE error MK_RBRACE struct_members {yyerrok; printf("only member definitions are allowed in a struct\n");}
+                        | STRUCT id MK_LBRACE error MK_RBRACE {yyerrok; printf("only member definitions are allowed in a struct\n");}
+                        ;
+/*
+struct_material         : struct_union_list
+                        | member_definitions_list
+                        ;
+*/
+struct_material_list    : struct_or_union_decl MK_SEMICOLON struct_material_list
+                        | horz_decl_init_list MK_SEMICOLON struct_material_list
+                        |
                         ;
 struct_members          : derived_id MK_COMMA struct_members
                         | derived_id
@@ -140,14 +151,15 @@ id                      : ID                                                    
                         | ID array_braces array_braces_list
                         | ID blank_array_braces array_braces_list
                         ;
-horz_decl_init_list     : parameter_decl assignment more_horz_param_list
-                        | parameter_decl assignment
+horz_decl_init_list     : parameter_decl hard_assignment more_horz_param_list
+                        | parameter_decl hard_assignment
+                        | parameter_decl
+                        | parameter_decl more_horz_param_list
                         ;
-more_horz_param_list    : MK_COMMA ID assignment more_horz_param_list
-                        | MK_COMMA ID assignment
-                        ;
-assignment              : hard_assignment
-                        |
+more_horz_param_list    : MK_COMMA ID hard_assignment more_horz_param_list
+                        | MK_COMMA ID hard_assignment
+                        | MK_COMMA ID
+                        | MK_COMMA ID more_horz_param_list
                         ;
 hard_assignment         : OP_ASSIGN function_call
                         | OP_ASSIGN expression_ll_with_id
