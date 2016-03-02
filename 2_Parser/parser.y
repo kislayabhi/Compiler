@@ -66,9 +66,7 @@ global_decl             : function_decl MK_SEMICOLON
                         | function_call MK_SEMICOLON
                         | control_flow
                         | struct_or_union_decl MK_SEMICOLON
-/*
-                        | error MK_SEMICOLON {yyerrok; printf("\n Error in global declaration");}
-*/
+                        | derived_id error MK_SEMICOLON{yyerrok; printf("id errors in global function\n");}
                         ;
 function_decl           : type ID MK_LPAREN parameter_list MK_RPAREN
                         | type ID MK_LPAREN MK_RPAREN
@@ -122,6 +120,7 @@ control_flow            : WHILE MK_LPAREN control_arguments MK_RPAREN statement
 control_arguments       : expression_list_list
                         | horz_init_list
                         | horz_decl_init_list
+                        | derived_id error {yyerrok; printf("id errors in local function\n");}
                         ;
 return_statement        : RETURN sign CONST
                         | RETURN CONST
@@ -151,13 +150,15 @@ assignment              : hard_assignment
                         |
                         ;
 hard_assignment         : OP_ASSIGN function_call
-                        | OP_ASSIGN expression_list_list
+                        | OP_ASSIGN expression_ll_with_id
                         | OP_ASSIGN error MK_SEMICOLON {yyerrok; printf("\n Error in assignment \n");}
                         ;
 expression_list_list    : CONST
                         | CONST expression_list
                         | derived_id expression_list
                         | expression_list
+                        ;
+expression_ll_with_id   : expression_list_list
                         | derived_id
                         ;
 expression_list         : expression expression_list
@@ -165,8 +166,8 @@ expression_list         : expression expression_list
                         ;
 expression              : arithmetic_units primary
                         | arithmetic_units                                              %prec "lessthanlparen"
-                        | arithmetic_units MK_LPAREN expression_list_list MK_RPAREN
-                        | MK_LPAREN expression_list_list MK_RPAREN
+                        | arithmetic_units MK_LPAREN expression_ll_with_id MK_RPAREN
+                        | MK_LPAREN expression_ll_with_id MK_RPAREN
                         ;
 primary                 : id
                         | CONST
@@ -238,5 +239,5 @@ yyerror (mesg)
 char *mesg;
 {
 	printf("%s\t%d\t%s\t%s\n", "Error found in Line ", linenumber, "next token: ", yytext );
-  	printf("%s\n", mesg);
+  	printf("%s\t", mesg);
 }
