@@ -52,7 +52,7 @@ static int linenumber = 1;
 
 /* ==== Grammar Section ==== */
 
-/* Productions */               /* Semantic actions */
+/* Productions */        /* Semantic actions */
 program                 : global_decl_list
                         ;
 global_decl_list        : global_decl_list global_decl
@@ -65,28 +65,37 @@ global_decl             : function_decl MK_SEMICOLON
                         | horz_init_list MK_SEMICOLON
                         | function_call MK_SEMICOLON
                         | control_flow
-                        ;
+                        | struct_or_union_decl MK_SEMICOLON
 /*
-                        | struct_or_union_decl
-                        | parameter_decl_init
-                        ;
+                        | error MK_SEMICOLON {yyerrok; printf("\n Error in global declaration");}
 */
+                        ;
 function_decl           : type ID MK_LPAREN parameter_list MK_RPAREN
                         | type ID MK_LPAREN MK_RPAREN
                         | VOID ID MK_LPAREN parameter_list MK_RPAREN
                         | VOID ID MK_LPAREN MK_RPAREN
+/*
+                        | VOID error MK_SEMICOLON {yyerrok;}
+*/
                         ;
 function_def            : type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         | type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         | VOID ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         | VOID ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
-                        ;
+                        | type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE error MK_SEMICOLON {yyerrok; printf("\n Error in function_body");}
 /*
-struct_or_union_decl    : STRUCT structure_tag MK_LBRACE structure_body MK_RBRACE structure_variables MK_SEMICOLON
-                        ;
-parameter_decl_init     : type variable_array_list
-                        ;
+                        | type ID MK_LPAREN MK_RPAREN MK_LBRACE error MK_SEMICOLON {yyerrok;}
 */
+                        ;
+struct_or_union_decl    : STRUCT id MK_LBRACE function_body MK_RBRACE struct_members
+                        | STRUCT MK_LBRACE function_body MK_RBRACE struct_members
+                        | STRUCT id MK_LBRACE function_body MK_RBRACE
+                        | STRUCT MK_LBRACE function_body MK_RBRACE
+                        | STRUCT id struct_members
+                        ;
+struct_members          : derived_id MK_COMMA struct_members
+                        | derived_id
+                        ;
 function_body           : statement_list
                         ;
 statement_list          : statement_list statement
@@ -96,6 +105,7 @@ statement               : return_statement MK_SEMICOLON
                         | function_call MK_SEMICOLON
                         | control_flow
                         | control_arguments MK_SEMICOLON
+                        | struct_or_union_decl MK_SEMICOLON
                         | MK_SEMICOLON
                         ;
 control_flow            : WHILE MK_LPAREN control_arguments MK_RPAREN statement
@@ -117,8 +127,12 @@ return_statement        : RETURN sign CONST
                         | RETURN CONST
                         | RETURN sign id
                         | RETURN id
+                        | RETURN
                         ;
 horz_init_list          : derived_id hard_assignment
+/*
+                        | derived_id error MK_SEMICOLON {yyerrok; printf("\t Error: Stray identifier \n");}
+*/
                         ;
 derived_id              : id MK_DOT id
                         | id
@@ -138,46 +152,34 @@ assignment              : hard_assignment
                         ;
 hard_assignment         : OP_ASSIGN function_call
                         | OP_ASSIGN expression_list_list
+                        | OP_ASSIGN error MK_SEMICOLON {yyerrok; printf("\n Error in assignment \n");}
                         ;
 expression_list_list    : CONST
                         | CONST expression_list
                         | derived_id expression_list
                         | expression_list
                         | derived_id
-/*
-                        | MK_LPAREN expression_list_list MK_RPAREN
-*/
                         ;
 expression_list         : expression expression_list
                         | expression
-/*
-                        | MK_LPAREN expression_list_list MK_RPAREN
-*/
                         ;
 expression              : arithmetic_units primary
                         | arithmetic_units                                              %prec "lessthanlparen"
                         | arithmetic_units MK_LPAREN expression_list_list MK_RPAREN
                         | MK_LPAREN expression_list_list MK_RPAREN
-
                         ;
 primary                 : id
                         | CONST
-/*
-                        | MK_LPAREN expression_list_list MK_RPAREN
-*/
                         ;
 function_call           : ID MK_LPAREN MK_RPAREN
                         | ID MK_LPAREN argument_list MK_RPAREN
                         ;
-/*
-return_type             : type
-                        | VOID
-                        ;
-*/
 argument_list           : argument
                         | argument_list MK_COMMA argument
                         ;
-argument                : id|CONST;
+argument                : id
+                        | CONST
+                        ;
 parameter_list          : parameter_decl
                         | parameter_list MK_COMMA parameter_decl
                         ;
@@ -221,13 +223,14 @@ binary_units            : OP_OR
 %%
 
 #include "lex.yy.c"
+
 main (argc, argv)
 int argc;
 char *argv[];
   {
-     	yyin = fopen(argv[1],"r");
+        init_symtab();
+        yyin = fopen(argv[1],"r");
      	yyparse();
-     	printf("%s\n", "Parsing completed. No errors found.");
   }
 
 
@@ -236,5 +239,4 @@ char *mesg;
 {
 	printf("%s\t%d\t%s\t%s\n", "Error found in Line ", linenumber, "next token: ", yytext );
   	printf("%s\n", mesg);
-  	exit(1);
 }

@@ -2,10 +2,12 @@
 
 %{
 #include <stdio.h>
-
+#include <stdbool.h>
+#include "symboltable.h"
 %}
 letter   [A-Za-z]
 digit    [0-9]
+kwTypedef "typedef"
 kwInt    "int"
 kwFloat  "float"
 kwVoid   "void"
@@ -15,7 +17,6 @@ kwWhile  "while"
 kwFor	 "for"
 kwStruct "struct"
 kwUnion  "union"
-kwTypedef "typedef"
 kwReturn "return"
 
 ID       ({letter})({letter}|{digit}|"_")*
@@ -48,9 +49,11 @@ mk_comma  ","
 mk_semicolon ";"
 mk_dot  "."
 error    .
-
+%x typedefs
 %%
-
+"typedef"                                       BEGIN(typedefs);
+<typedefs>{ws}({kwInt}|{kwFloat}){ws}           ;
+<typedefs>{ID}                                  insert_id(yytext);BEGIN(INITIAL);
 {ws}            ;   /* do nothing with whitespace */
 {comment}	;
 {kwInt}         return INT;
@@ -62,10 +65,9 @@ error    .
 {kwFor}      	return FOR;
 {kwStruct}	return STRUCT;
 {kwUnion}	return STRUCT;
-{kwTypedef}     return TYPEDEF;
 {kwReturn}      return RETURN;
-{ID}            { return ID; }
-{op_assign}     return OP_ASSIGN; 
+{ID}            if(find_id(yytext)==0){return ID;} else {return INT;}
+{op_assign}     return OP_ASSIGN;
 {op_and}        return OP_AND;
 {op_or}         return OP_OR;
 {op_not}        return OP_NOT;
@@ -94,4 +96,3 @@ error    .
 {error}         return ERROR;
 
 %%
-
