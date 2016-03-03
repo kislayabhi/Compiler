@@ -1,0 +1,55 @@
+struct x {
+        int a;
+        float c;
+        int a3[10][10];
+        datad;                                  /*Error*/
+} a;
+
+int a;
+uinin;
+
+data;                                           /*Error*/
+int data1;
+int data1;
+int data1;
+int data1;
+double dagag;                                   /*Error*/
+int data1;
+int data1;
+int data1;
+int data11, data12=14, data13;
+int data1;
+
+int myfunc1(){
+        if(asdfd;wherwar){
+                d=9as;                          /*This assignment error is ignored
+                                                as the condition of the if statement is wrong.
+                                                There is no point in checking the if's scope now.*/
+        }
+        if(data1==0){
+                int kapa=92wrong;               /*Assignment error caught here*/
+        }
+}
+
+int main(){
+        data;                                   /*Unidentified id Error*/
+        int data1, data2=4, data3;
+        int data1;
+        afaf1212;                               /*Unidentified id Error*/
+        double afaf;                            /*Unidentified type Error*/
+        int data1;
+        for(int i=0;i<10; i++){
+                data1++;
+                double dunoid;                  /*Unidentified type Error*/
+        }
+        for(int i=0;;i<10; i++){                /*Error in For condition*/
+                data1++;
+        }
+        int data2;
+        int data3;
+        while(int==1){                          /*Error in while condition*/
+        }
+        a=5as;                                  /*Assignment Error*/
+        int da;
+        double asag;                            /*Unidentified type Error*/
+}

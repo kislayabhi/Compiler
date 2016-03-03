@@ -1,0 +1,3 @@
+test:
+	../parser Test5
+
