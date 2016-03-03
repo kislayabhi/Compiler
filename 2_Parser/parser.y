@@ -48,6 +48,7 @@ static int linenumber = 1;
 %start program
 %right "then" ELSE /*Same precedence but "shift" wins"*/
 %right "lessthanlparen" MK_LPAREN
+%right "reduce_error" MK_SEMICOLON
 %%
 
 /* ==== Grammar Section ==== */
@@ -64,26 +65,18 @@ global_decl             : function_decl MK_SEMICOLON
                         | horz_decl_init_list MK_SEMICOLON
                         | horz_init_list MK_SEMICOLON
                         | function_call MK_SEMICOLON
-                        | control_flow
                         | struct_or_union_decl MK_SEMICOLON
-                        | derived_id error MK_SEMICOLON{yyerrok; printf("id errors in global function\n");}
+                        | derived_id error MK_SEMICOLON{yyerrok; printf("Unidentified typename or Id (global)\n");}
                         ;
 function_decl           : type ID MK_LPAREN parameter_list MK_RPAREN
                         | type ID MK_LPAREN MK_RPAREN
                         | VOID ID MK_LPAREN parameter_list MK_RPAREN
                         | VOID ID MK_LPAREN MK_RPAREN
-/*
-                        | VOID error MK_SEMICOLON {yyerrok;}
-*/
                         ;
 function_def            : type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         | type ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         | VOID ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE function_body MK_RBRACE
                         | VOID ID MK_LPAREN MK_RPAREN MK_LBRACE function_body MK_RBRACE
-                        | type ID MK_LPAREN parameter_list MK_RPAREN MK_LBRACE error MK_SEMICOLON {yyerrok; printf("\n Error in function_body");}
-/*
-                        | type ID MK_LPAREN MK_RPAREN MK_LBRACE error MK_SEMICOLON {yyerrok;}
-*/
                         ;
 struct_or_union_decl    : STRUCT id MK_LBRACE struct_material_list MK_RBRACE struct_members
                         | STRUCT MK_LBRACE struct_material_list MK_RBRACE struct_members
@@ -93,11 +86,6 @@ struct_or_union_decl    : STRUCT id MK_LBRACE struct_material_list MK_RBRACE str
                         | STRUCT id MK_LBRACE error MK_RBRACE struct_members {yyerrok; printf("only member definitions are allowed in a struct\n");}
                         | STRUCT id MK_LBRACE error MK_RBRACE {yyerrok; printf("only member definitions are allowed in a struct\n");}
                         ;
-/*
-struct_material         : struct_union_list
-                        | member_definitions_list
-                        ;
-*/
 struct_material_list    : struct_or_union_decl MK_SEMICOLON struct_material_list
                         | horz_decl_init_list MK_SEMICOLON struct_material_list
                         |
@@ -116,6 +104,8 @@ statement               : return_statement MK_SEMICOLON
                         | control_arguments MK_SEMICOLON
                         | struct_or_union_decl MK_SEMICOLON
                         | MK_SEMICOLON
+                        | derived_id error MK_SEMICOLON{yyerrok; printf("Unidentified typename or Id (local)\n");}
+                        | control_arguments error MK_SEMICOLON{yyerrok; printf("Errors with assignment operator\n");}
                         ;
 control_flow            : WHILE MK_LPAREN control_arguments MK_RPAREN statement
                         | WHILE MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
@@ -127,11 +117,13 @@ control_flow            : WHILE MK_LPAREN control_arguments MK_RPAREN statement
                         | IF MK_LPAREN control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE ELSE MK_LBRACE function_body MK_RBRACE
                         | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN statement
                         | FOR MK_LPAREN control_arguments MK_SEMICOLON control_arguments MK_SEMICOLON control_arguments MK_RPAREN MK_LBRACE function_body MK_RBRACE
+                        | IF MK_LPAREN error MK_RBRACE {yyerrok; printf("Errors in if(***) condition\n");}
+                        | FOR MK_LPAREN error MK_RBRACE {yyerrok; printf("Errors in for(***) condition\n");}
+                        | WHILE MK_LPAREN error MK_RBRACE {yyerrok; printf("Errors in while(***) condition\n");}
                         ;
 control_arguments       : expression_list_list
                         | horz_init_list
                         | horz_decl_init_list
-                        | derived_id error {yyerrok; printf("id errors in local function\n");}
                         ;
 return_statement        : RETURN sign CONST
                         | RETURN CONST
@@ -140,9 +132,6 @@ return_statement        : RETURN sign CONST
                         | RETURN
                         ;
 horz_init_list          : derived_id hard_assignment
-/*
-                        | derived_id error MK_SEMICOLON {yyerrok; printf("\t Error: Stray identifier \n");}
-*/
                         ;
 derived_id              : id MK_DOT id
                         | id
@@ -163,7 +152,6 @@ more_horz_param_list    : MK_COMMA ID hard_assignment more_horz_param_list
                         ;
 hard_assignment         : OP_ASSIGN function_call
                         | OP_ASSIGN expression_ll_with_id
-                        | OP_ASSIGN error MK_SEMICOLON {yyerrok; printf("\n Error in assignment \n");}
                         ;
 expression_list_list    : CONST
                         | CONST expression_list
