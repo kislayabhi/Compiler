@@ -1,138 +1,156 @@
-#include<stdio.h>
-#include<string.h>
-#include<malloc.h>
-#include<ctype.h>
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
+#include "stdbool.h"
 #include "symboltable.h"
 
+bool insert_hash(symbol_table *my_table, char *text)  {
+	// insert the string at the generated hash.
+	list_node *new_node = (list_node*)malloc(sizeof(list_node));
+	new_node->value = (char*)malloc(strlen(text)+1);
+	new_node->freq = 1;
+	new_node->next = NULL;
 
+	unsigned int hash_value = generate_RSHash(text, strlen(text));
 
-int hash(char *key) /*Hash function */
-{
-    int val=0,pow=1,len,i;
-    len=strlen(key);
-    for(i=0;i<len;i++){
-        val=(val+(((key[i]%TABLESIZE)*pow)%TABLESIZE))%TABLESIZE;
-        pow=(pow*(8779)%TABLESIZE)%TABLESIZE;
-    }
-    return val;
+	/* We keep the array size of TABLE_LENGTH. */
+	unsigned int table_index = hash_value % TABLE_LENGTH;
+
+	if(!my_table->table[table_index]) {  	/* Initial case */
+		my_table->table[table_index] = new_node;
+		strcpy(new_node->value, text);
+		my_table->size++;
+	}
+	else  {
+		bool collision = false;
+		list_node *node, *prev;
+		for(node = my_table->table[table_index]; ; node = node->next)  {
+			prev = node;
+
+			if(strcmp(node->value, text) == 0)  {
+				node->freq++;
+				collision = true;
+				free(new_node->value);
+				free(new_node);
+				break;
+			}
+
+			if(node->next == NULL)
+				break;
+		}
+		if(collision == false)  {
+		        /* Otherwise we add the new hash value at the last */
+			strcpy(new_node->value, text);
+			node->next = new_node;
+			my_table->size++;
+		}
+	}
 }
 
-ptr getnode(char *text)	/* Create node in Symbol Table */
-{
-    ptr tmp;
-    tmp=(ptr)malloc(sizeof(struct node));
-    strcpy(tmp->id,text);
-    tmp->freq=1;
-    tmp->next=NULL;
-    return tmp;
+bool is_id_present(symbol_table *my_table, char* text)  {
+	int i;
+	for(i = 0; i < TABLE_LENGTH; i++)  {
+		if(my_table->table[i])  {
+			list_node *start=my_table->table[i];
+			for(; start!=NULL; start = start->next)
+				if(strcmp(start->value, text) == 0)
+					return true;
+		}
+	}
+	return false;
 }
 
-struct com_node* getcomment(char *str)	/* Put comment into Comment Table */
-{
-    struct com_node *tmp;
-    tmp=(struct com_node*)malloc(sizeof(struct com_node));
-    tmp->com=(char *)malloc(strlen(str)*sizeof(char));
-    strcpy(tmp->com,str);
-    tmp->next=NULL;
-    return tmp;
+void delete_hash_table(symbol_table *my_table)  { /* Clean hash table*/
+	int i;
+	for(i=0; i<TABLE_LENGTH; i++)  {
+		if(my_table->table[i])  {
+			list_node* temp1 = my_table->table[i];
+			list_node* temp2;
+			while(temp1)  {
+				temp2 = temp1->next;
+				free(temp1->value);
+				free(temp1);
+				temp1 = temp2;
+			}
+			my_table->table[i] = NULL;
+		}
+	}
+	free(my_table);
 }
 
-void init_symtab()	/* Initialize Symbol Table */
+
+/* qsort C-string comparison function */
+int cstring_cmp(const void *a, const void *b)
 {
-    int i;
-    for(i=0;i<TABLESIZE;i++)
-        symtab[i]=NULL;
-    return;
+	const list_node *ia = a;
+	const list_node *ib = b;
+	return strcmp(ia->value, ib->value);
 }
 
-void insert_id(char *text)	/* Populate Symbol Table */
-{
-    int val=hash(text);
-    ptr p=symtab[val],q;
-    if(p==NULL)    //insert new element
-        symtab[val]=getnode(text);
-    else{
-        while(p!=NULL && strcmp(p->id,text)){
-            q=p;
-            p=p->next;
-        }
-        if(p==NULL)
-            q->next=getnode(text);
-        else
-            p->freq++; 
-    }
-    return;
+
+void print_hash_table(symbol_table *my_table, bool print_freq)  {
+	int buffer_index=0;
+	list_node buffer[my_table->size];
+	int i;
+	for(i = 0; i < TABLE_LENGTH; i++)  {
+		if(my_table->table[i])  {
+			list_node *start=my_table->table[i];
+			if(print_freq)
+				for(; start!=NULL; start = start->next)  {
+					buffer[buffer_index].value = malloc(strlen(start->value) + 1);
+					strcpy(buffer[buffer_index].value, start->value);
+					buffer[buffer_index++].freq = start->freq;
+				}
+			else
+				for(; start!=NULL; start = start->next)
+					printf("%s \n", start->value);
+		}
+	}
+
+	if(print_freq)  {
+		qsort(buffer, my_table->size, sizeof(list_node), cstring_cmp);
+		int i;
+		for(i=0; i<my_table->size; i++)
+			printf("\n %s %d", buffer[i].value, buffer[i].freq);
+	}
+
 }
 
-void print_symtab()	/* Print Symbol Table */
-{
-    ptr p;
-    int i;
-    printf("Frequency of identifiers:\n");
-    for(i=0;i<TABLESIZE;i++){
-        p=symtab[i];
-        while(p!=NULL){
-            printf("%s %d\n",p->id,p->freq);
-            p=p->next;
-        }
-    }
-    return;
+unsigned int generate_RSHash(char* str, unsigned int len)  {
+	unsigned int b    = 378551;
+	unsigned int a    = 63689;
+	unsigned int hash = 0;
+	unsigned int i    = 0;
+
+	for(i = 0; i < len; str++, i++)  {
+		hash = hash * a + (*str);
+		a = a * b;
+	}
+	return hash;
+}
+/* End Of RS Hash Function */
+
+
+/* Globally declare a symbol table pointer */
+symbol_table *id_table;
+
+void init_symtab()  {	/* Initialize Symbol Table */
+	id_table = (symbol_table*)malloc(sizeof(symbol_table));
+	id_table->size = 0;
+}
+void insert_id(char *text)  {  /* Populate Symbol Table */
+	insert_hash(id_table, text);
 }
 
-void cleanup_symtab()	/* Clean Symbol Table */
-{
-    int i;
-    ptr p,q;
-    for(i=0;i<TABLESIZE;i++){
-        p=symtab[i];
-        while(p){
-            q=p->next;
-            free(p);
-            p=q;
-        }
-    }
-    return;
+void print_symtab()  {  /* Print Symbol Table */
+	printf("\n\nFrequency of identifiers");
+	print_hash_table(id_table, true);
 }
 
-void init_comtab()	/* Initialize Comment Table */
-{
-    comtab=NULL;
-    curcom=NULL;
-    return;
+void cleanup_symtab()  {  /* Clean Symbol Table */
+	delete_hash_table(id_table);
 }
 
-void insert_comment(char *comment)	/* Insert comments into Comment Table */
-{
-    if(comtab==NULL){   //first comment
-        comtab=getcomment(comment);
-        curcom=comtab;
-    }
-    else{
-        curcom->next=getcomment(comment);
-        curcom=curcom->next;
-    }
-    return;
-}
-
-void print_comtab()	/* Print Comment Table */
-{
-    struct com_node *tmp;
-    tmp=comtab;
-    while(tmp!=NULL){
-        printf("/*%s*/\n",tmp->com);
-        tmp=tmp->next;
-    }
-    return;
-}
-
-void cleanup_comtab()	/* Clean Comment Table */
-{
-    struct com_node *tmp,*tmp1;
-    tmp=comtab;
-    while(tmp){
-        tmp1=tmp->next;
-        free(tmp);
-        tmp=tmp1;
-    }
-    return;
+bool find_id(char *text)  {
+	is_id_present(id_table, text);
 }

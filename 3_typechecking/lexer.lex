@@ -53,9 +53,9 @@ error    .
 
 {ws}            ;   /* do nothing with whitespace */
 {comment}	;
-{kwInt}         {tokens++;return INT;}
-{kwFloat}       {tokens++;return FLOAT;}
-{kwVoid}	{tokens++;return VOID;}
+{kwInt}         {tokens++; yylval.intval = 0; return INT;}
+{kwFloat}       {tokens++; yylval.intval = 1; return FLOAT;}
+{kwVoid}	{tokens++; yylval.intval = 2; return VOID;}
 {kwIf}          {tokens++;return IF;}
 {kwElse}        {tokens++;return ELSE;}
 {kwWhile}       {tokens++;return WHILE;}
@@ -64,7 +64,7 @@ error    .
 {kwUnion}	{tokens++;return STRUCT;}
 {kwTypedef}     {tokens++;return TYPEDEF;}
 {kwReturn}      {tokens++;return RETURN;}
-{ID}            {tokens++;return ID;}
+{ID}            {tokens++; yylval.stringval=strdup(yytext); return ID;}
 {op_assign}     {tokens++;return OP_ASSIGN;}
 {op_and}        {tokens++;return OP_AND;}
 {op_or}         {tokens++;return OP_OR;}
@@ -79,9 +79,9 @@ error    .
 {op_minus}      {tokens++;return OP_MINUS;}
 {op_times}      {tokens++;return OP_TIMES;}
 {op_divide}     {tokens++;return OP_DIVIDE;}
-{int-const}	{tokens++;return CONST;}
-{flt-const}	{tokens++;return CONST;}
-{s-const}	{tokens++;return CONST;}
+{int-const}	{tokens++;return ICONST;}
+{flt-const}	{tokens++;return FCONST;}
+{s-const}	{tokens++;return SCONST;}
 {mk_lparen}     {tokens++;return MK_LPAREN;}
 {mk_rparen}     {tokens++;return MK_RPAREN;}
 {mk_lbrace}     {tokens++;return MK_LBRACE;}
@@ -95,4 +95,3 @@ error    .
 {error}         return ERROR;
 
 %%
-

@@ -1,32 +1,45 @@
-struct node{	/* Structure for Identifiers */
-    char id[257];
+#ifndef SYMBOLTABLE_H
+#define SYMBOLTABLE_H
+
+#include "datatypes.h"
+#define TABLE_LENGTH 100
+
+/*For Linked List*/
+typedef struct list_node{
+    char *value;
     int freq;
-    int arg_num;	/*# of Arguments in the function*/
-    int return_type;	/*Return type of the function*/
-    struct node *next;
-};
+    /*
+    union {
+            A_var* Avar_ptr;
+            A_func* Afunc_ptr;
+    }node_attribute;
+    */
+    struct list_node* next;
+} list_node;
 
-typedef struct node* ptr;
+typedef struct symbol_table{
+    list_node* table[TABLE_LENGTH];
+    int size;
+} symbol_table;
 
-#define TABLESIZE 100
-ptr symtab[TABLESIZE];
+/* General hashtable routines */
+unsigned int generate_RSHash(char* , unsigned int);
+bool insert_hash(symbol_table*, char*);
+void print_hash_table(symbol_table*, bool);
+void delete_hash_table(symbol_table*);
 
-struct com_node{	/* Structure for Comments */
-    char *com;
-    struct com_node *next;
-};
 
-struct com_node *comtab,*curcom;
-
-/* Function definitions */
-int hash(char *key);
-ptr getnode(char *text);
-struct com_node* getcomment(char *str);
+/* Symbol table management routines */
 void init_symtab();
-void insert_id(char *text);
 void print_symtab();
 void cleanup_symtab();
+void insert_id(char *text);
+bool find_id(char *text);
+
+/* Comment table management routines */
 void init_comtab();
-void insert_comment(char *comment);
 void print_comtab();
 void cleanup_comtab();
+void insert_comment(char *comment);
+
+#endif //SYMBOLTABLE_H

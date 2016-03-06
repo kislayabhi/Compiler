@@ -8,9 +8,10 @@ int read(int b){
 int main(){
 
 	int i = 10.0;
+	int data1;
+	int data2;
 	struct new{
 		int j;
-/*		int read();*/
 	};
 	if(-(i < 10)){
 		i = 10;
