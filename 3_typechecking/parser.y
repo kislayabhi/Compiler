@@ -17,8 +17,8 @@ static int linenumber = 1;
 	A_var var;
 	A_func func;
 	idlist* idlisttype;
-
 }
+
 /*
    The following are just the token types. The grammar rules know nothing
    about tokens except their types. What I write in angle brackets is the

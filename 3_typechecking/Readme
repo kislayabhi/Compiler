@@ -1,0 +1,7 @@
+Todo:
+Right now I am not taking into consideration the fact that a variable can be
+initialized at the moment of declaration. So for now, the thing that has to be
+done is:
+1. I have the type of the Id at the time of pushing in bulk of the contents of
+        linked list into the symbol table. But I am yet not using it. So I need
+        to make space for type in the symbol table node structure.

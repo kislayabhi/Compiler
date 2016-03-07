@@ -4,12 +4,14 @@
 #include "stdbool.h"
 #include "symboltable.h"
 
-bool insert_hash(symbol_table *my_table, char *text)  {
+bool insert_hash(symbol_table *my_table, id_type_t idtype, char *text, node_attribute* ptr_atrb)  {
 	// insert the string at the generated hash.
 	list_node *new_node = (list_node*)malloc(sizeof(list_node));
 	new_node->value = (char*)malloc(strlen(text)+1);
 	new_node->freq = 1;
 	new_node->next = NULL;
+	new_node->currnode_attribute = ptr_atrb;
+	new_node->id_type = idtype;
 
 	unsigned int hash_value = generate_RSHash(text, strlen(text));
 
@@ -80,13 +82,18 @@ void delete_hash_table(symbol_table *my_table)  { /* Clean hash table*/
 
 
 /* qsort C-string comparison function */
-int cstring_cmp(const void *a, const void *b)
-{
+int cstring_cmp(const void *a, const void *b) {
 	const list_node *ia = a;
 	const list_node *ib = b;
 	return strcmp(ia->value, ib->value);
 }
 
+void print_attributes(id_type_t type, list_node* node) {
+	if(type==variable) {
+		int type_fl_int = node->currnode_attribute->Avar_ptr->var_type;
+		printf("\t\t value: %d",node->currnode_attribute->Avar_ptr->var_value.int_value);
+	}
+}
 
 void print_hash_table(symbol_table *my_table, bool print_freq)  {
 	int buffer_index=0;
@@ -99,19 +106,24 @@ void print_hash_table(symbol_table *my_table, bool print_freq)  {
 				for(; start!=NULL; start = start->next)  {
 					buffer[buffer_index].value = malloc(strlen(start->value) + 1);
 					strcpy(buffer[buffer_index].value, start->value);
+					buffer[buffer_index].id_type = start->id_type;
+					buffer[buffer_index].currnode_attribute = start->currnode_attribute;
 					buffer[buffer_index++].freq = start->freq;
 				}
 			else
-				for(; start!=NULL; start = start->next)
+				for(; start!=NULL; start = start->next) {
 					printf("%s \n", start->value);
+				}
 		}
 	}
 
 	if(print_freq)  {
 		qsort(buffer, my_table->size, sizeof(list_node), cstring_cmp);
 		int i;
-		for(i=0; i<my_table->size; i++)
+		for(i=0; i<my_table->size; i++) {
 			printf("\n %s %d", buffer[i].value, buffer[i].freq);
+			print_attributes(buffer[i].id_type, buffer+i);
+		}
 	}
 
 }
@@ -138,8 +150,8 @@ void init_symtab()  {	/* Initialize Symbol Table */
 	id_table = (symbol_table*)malloc(sizeof(symbol_table));
 	id_table->size = 0;
 }
-void insert_id(char *text)  {  /* Populate Symbol Table */
-	insert_hash(id_table, text);
+void insert_id(id_type_t idtype, char *text, node_attribute* ptr_atrb_sym)  {  /* Populate Symbol Table */
+	insert_hash(id_table, idtype, text, ptr_atrb_sym);
 }
 
 void print_symtab()  {  /* Print Symbol Table */
