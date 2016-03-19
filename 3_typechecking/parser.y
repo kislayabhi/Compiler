@@ -16,6 +16,7 @@ static int linenumber = 1;
 	char *stringval;
 	A_var var;
 	A_func func;
+	A_usr_def_type_var user_defined_type;
 	idlist* idlisttype;
 }
 
@@ -29,9 +30,9 @@ static int linenumber = 1;
 %token <intval>ICONST
 %token <floatval>FCONST
 %token <stringval>SCONST
-%token <intval>VOID
-%token <intval>INT
-%token <intval>FLOAT
+%token <stringval>VOID
+%token <stringval>INT
+%token <stringval>FLOAT
 %token IF
 %token ELSE
 %token WHILE
@@ -64,10 +65,15 @@ static int linenumber = 1;
 %token ERROR
 %token RETURN
 
-%type<intval> var_decl
-%type<intval> type
+%type<stringval> var_decl
+%type<stringval> type
 %type<idlisttype> init_id_list
+%type<idlisttype> id_list
 %type<stringval> init_id
+%type<stringval> var_ref
+%type<user_defined_type> struct_type
+%type<user_defined_type> tag
+%type<user_defined_type> type_decl
 
 
 %start program
@@ -84,7 +90,11 @@ global_decl_list: global_decl_list global_decl
                 |
 		;
 
-global_decl	: decl_list function_decl
+global_decl	: decl_list function_decl/*This grammar is special in the sense
+					   that ... you cannot have global
+					   variables declared alone without
+					   declaring any function.
+					   */
 		| function_decl
 		;
 
@@ -132,39 +142,180 @@ decl		: type_decl
 		| var_decl
 		;
 
-type_decl 	: TYPEDEF type id_list MK_SEMICOLON
-		| TYPEDEF VOID id_list MK_SEMICOLON
-		| TYPEDEF struct_type id_list MK_SEMICOLON
-		| struct_type MK_SEMICOLON
+type_decl 	: TYPEDEF type id_list MK_SEMICOLON 	{
+								A_usr_def_type_var temp;
+								temp.which_usrtype = typedef_type;
+								temp.typename = strdup($1);
+								/*Check if id_list is already there in the symbol table*/
+								
+							}
+		| TYPEDEF VOID id_list MK_SEMICOLON /* Udt for void created */
+		| TYPEDEF struct_type id_list MK_SEMICOLON /* Udt for struct_type created */
+						           /* struct_type mein kaam ka sirf tag ka ID part hi hai...aur kaafi locha hai udhar */
+							   /* Just like baki saarey types ek constant return kar rahey hain in place of semantic value */
+							   /* This should also return some kind of kaam ka stuff. */
+		| struct_type MK_SEMICOLON /* Here the term "struct_type" is to be used. type ke naam use karney padengey aisa prateet hota hai */
 		;
+
 /* init_idlist will always have the pointer to the head of the idlist*/
-var_decl	: type init_id_list MK_SEMICOLON {declare_variables($1); $$=$1; reinit_idlist();}
-		| struct_type id_list MK_SEMICOLON
-		| ID id_list MK_SEMICOLON
+/* In the case of struct, along with the var_decl, type declaration also happens simultaneously. */
+var_decl	: type init_id_list MK_SEMICOLON {
+							if(!is_initidlist_empty()) {
+								declare_variables($1);
+								$$=strdup($1);
+								reinit_idlist();
+							}
+						 }
+		| struct_type id_list MK_SEMICOLON {
+							/*see if the struct type exists or not*/
+							if(is_struct_type_exists($1)) {
+								if(!is_initidlist_empty()) {
+									declare_usr_def_variables($1);
+									$$=strdup($1.typename);
+									reinit_idlist();
+								}
+							}
+							else {
+								yyerror();
+								printf("\t struct type(name) undeclared \n");
+								reinit_idlist();
+							}
+						   }
+		| STRUCT ID id_list MK_SEMICOLON {
+							A_usr_def_type_var temp;
+							temp.which_usrtype = struct_type_explicit;
+							temp.typename = strdup($2);
+							/*see if the struct type exists or not*/
+							if(is_struct_type_exists(temp)) {
+								if(!is_initidlist_empty()) {
+									declare_usr_def_variables(temp);
+									$$=strdup(temp.typename);
+									reinit_idlist();
+								}
+							}
+							else {
+								yyerror();
+								printf("\t struct type(name) undeclared \n");
+								reinit_idlist();
+							}
+						 }
+		| ID id_list MK_SEMICOLON /* This is very similar to the last case of the above struct_type rule.
+		 			     The only difference is that there STRUCT ID is replaced by ID when
+					     a TYPEDEF is used	*//* That means here also we need to check if then
+					     ID lies in the type table (not to be pushed here) *//* 4 represents typedef_type */ {
+
+					     	A_usr_def_type_var temp;
+						/*
+					     	temp.which_usrtype = typedef_type;
+					     	temp.typename = strdup($2);
+						*/
+						/*see if the typedef type exists or not*/
+						/*
+						if(is_typedef_type_exists(temp)) {
+							if(!is_initidlist_empty()) {
+								declare_usr_def_variables($1);
+								$$=4;
+								reinit_idlist();
+							}
+						}
+						else {
+							yyerror();
+							printf("\t typedef type(name) undeclared \n");
+							reinit_idlist();
+						}
+						*/
+					     }
 		;
 
 /* Suppported types. */
-type		: INT {$$=$1;}
-		| FLOAT {$$=$1;}
-		| VOID {$$=$1;}
-        	| error {$$=-1;}
+type		: INT {$$=strdup($1);}
+		| FLOAT {$$=strdup($1);}
+		| VOID {$$=strdup($1);}
+        	| error {char* temp = "error"; $$=strdup(temp);}
 		;
 
-struct_type	: STRUCT tag
+struct_type	: STRUCT tag { $$=$2; }
 		;
 
-/* Struct variable body. */
-tag		: ID MK_LBRACE decl_list MK_RBRACE
-		| MK_LBRACE decl_list MK_RBRACE
-		| ID MK_LBRACE MK_RBRACE
-		| MK_LBRACE MK_RBRACE
-		| ID
+/* Struct variable body. */ /* As long as you have braces, then it means type declaration. */
+/* Variable declaration is inherent in all the cases as it depends on the id_list */
+/* The last one means the use of the structure as a type. */
+tag		: ID MK_LBRACE decl_list MK_RBRACE /* type_decl */ {
+									$$.which_usrtype = struct_type_explicit;
+									$$.typename = strdup($1);
+									/* Here we actually want to push the typename as id and for now there is no symbol table attribute
+									associated with it */
+									insert_id($$.which_usrtype, $$.typename, NULL);
+								   }
+		| MK_LBRACE decl_list MK_RBRACE {
+							$$.which_usrtype = struct_type_implicit;
+							$$.typename = NULL;
+							/* Here we actually want to push the typename as id and for now there is no symbol table attribute
+							associated with it */
+							insert_id($$.which_usrtype, $$.typename, NULL);
+						}
+		| ID MK_LBRACE MK_RBRACE /* type_decl */ {
+								$$.which_usrtype = struct_type_explicit;
+								$$.typename = strdup($1);
+								/* Here we actually want to push the typename as id and for now there is no symbol table attribute
+								associated with it */
+								if(is_struct_type_exists($$)) {
+									yyerror();
+									printf("\t struct type(name) redeclared \n");
+								}
+								else {
+									insert_id($$.which_usrtype, $$.typename, NULL);
+								}
+							}
+		| MK_LBRACE MK_RBRACE {
+						$$.which_usrtype = struct_type_implicit;
+						$$.typename = NULL;
+						/* Here we actually want to push the typename as id and for now there is no symbol table attribute
+						associated with it */
+						insert_id($$.which_usrtype, $$.typename, NULL);
+				      }
 		;
 
-id_list		: ID
-		| id_list MK_COMMA ID
-		| id_list MK_COMMA ID dim_decl
-		| ID dim_decl
+id_list		: ID 	{
+				if(find_id($1) == false && find_in_idlist($1) == false)
+					$$ = append_idlist($1);
+				else
+				{
+					yyerror();
+					printf("\t ID(name) redeclared \n");
+					$$ = append_idlist(NULL);
+				}
+			}
+		| id_list MK_COMMA ID   {
+						if(find_id($3) == false && find_in_idlist($3) == false)
+							$$ = append_idlist($3);
+						else
+						{
+							yyerror();
+							printf("\t ID(name) redeclared \n");
+							$$ = append_idlist(NULL);
+						}
+					}
+		| id_list MK_COMMA ID dim_decl  {
+							if(find_id($3) == false && find_in_idlist($3) == false)
+								$$ = append_idlist($3);
+							else
+							{
+								yyerror();
+								printf("\t ID(name) redeclared \n");
+								$$ = append_idlist(NULL);
+							}
+						}
+		| ID dim_decl  {
+					if(find_id($1) == false && find_in_idlist($1) == false)
+						$$ = append_idlist($1);
+					else
+					{
+						yyerror();
+						printf("\t ID(name) redeclared \n");
+						$$ = append_idlist(NULL);
+					}
+				}
 		;
 
 dim_decl	: MK_LB cexpr MK_RB
@@ -184,8 +335,17 @@ cfactor		: const
 		;
 
 /* Use the info of the type of the lhs to initialize the rhs*/
-init_id_list	: init_id {$$=append_idlist($1);}
-		| init_id_list MK_COMMA init_id {$$=append_idlist($3);}
+init_id_list	: init_id {
+				if(find_id($1) == false && find_in_idlist($1) == false)
+					$$ = append_idlist($1);
+				else
+				{
+					yyerror();
+					printf("\t ID(name) redeclared \n");
+					$$ = append_idlist(NULL);
+				}
+			  }
+		| init_id_list MK_COMMA init_id {$$ = append_idlist($3);}
 		;
 
 init_id		: ID {$$=strdup($1);}
@@ -198,13 +358,17 @@ stmt_list	: stmt_list stmt
 		;
 
 stmt		: MK_LBRACE block MK_RBRACE
+
 		/* | While Statement here */
 		| WHILE MK_LPAREN relop_expr_list MK_RPAREN stmt
 	        | FOR MK_LPAREN assign_expr_list MK_SEMICOLON relop_expr_list MK_SEMICOLON assign_expr_list MK_RPAREN stmt
+
 		/* | If then else here */
 		| IF MK_LPAREN relop_expr MK_RPAREN stmt ELSE stmt
+
 		/* | If statement here */
 		| IF MK_LPAREN relop_expr MK_RPAREN stmt
+
 		/* | read and write library calls -- note that read/write are not keywords */
 		| ID MK_LPAREN relop_expr_list MK_RPAREN
 		| var_ref OP_ASSIGN relop_expr MK_SEMICOLON
@@ -222,7 +386,8 @@ nonempty_assign_expr_list       : nonempty_assign_expr_list MK_COMMA assign_expr
                 		| assign_expr
 				;
 
-assign_expr     : ID OP_ASSIGN relop_expr
+assign_expr     : ID OP_ASSIGN relop_expr /*TODO: here we have to check whether
+					    ID has already been declared or not.*/
                 | relop_expr
 		;
 
@@ -293,7 +458,12 @@ factor		: MK_LPAREN relop_expr MK_RPAREN
 		| OP_MINUS var_ref
 		;
 
-var_ref		: ID
+/*TODO: For every error encountered, you have to print the line for the error */
+var_ref		: ID 	{ if(find_id($1) == false) {
+				yyerror();
+				printf("\t ID(name) undeclared \n");
+				}
+			}
 		| var_ref dim
 		| var_ref struct_tail
 		;
@@ -308,34 +478,31 @@ const		: ICONST
 		| FCONST
 		| SCONST
 		;
-%%
-#include "lex.yy.c"
 
-int scope = 0;
-int main (int argc, char *argv[])
-{
-    init_symtab();
+		%%
+		#include "lex.yy.c"
+		int scope = 0;
+		int main (int argc, char *argv[])
+		{
+			init_symtab();
+			/* idlist is used at the time of variable declaration */
+			init_idlist();
+			if(argc>0)
+			yyin = fopen(argv[1],"r");
+			else
+			yyin=stdin;
+			yyparse();
+			printf("%s\n", "Parsing completed. No errors found.");
+			printf("%s\n", "PRINTING THE CONTENTS OF THE SYMBOL TABLE");
+			print_symtab();
+			cleanup_symtab();
+			cleanup_idlist();
+			return 0;
+		} /* main */
 
-    /* idlist is used at the time of variable declaration */
-    init_idlist();
-
-    if(argc>0)
-        yyin = fopen(argv[1],"r");
-    else
-        yyin=stdin;
-    yyparse();
-    printf("%s\n", "Parsing completed. No errors found.");
-    printf("%s\n", "PRINTING THE CONTENTS OF THE SYMBOL TABLE");
-    print_symtab();
-    cleanup_symtab();
-    cleanup_idlist();
-    return 0;
-} /* main */
-
-yyerror (mesg)
-char *mesg;
-  {
-      printf("%s\t%d\t%s\t%s\n", "Error found in Line ", linenumber, "next token: ", yytext );
-      printf("%s\n", mesg);
-      exit(1);
-  }
+		yyerror (mesg)
+		char *mesg;
+		{
+			extern int yylineno;
+			printf("%s%d, %s\"%s\"\n", "Error found in Line: ", yylineno, "next token: ", yytext );
+		}

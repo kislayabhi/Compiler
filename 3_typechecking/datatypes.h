@@ -4,6 +4,15 @@
 #include "stdbool.h"
 
 typedef enum {
+        variable,
+        func_name,
+        struct_type_implicit,
+        struct_type_explicit,
+        typedef_type,
+        usr_def_type_variable
+} id_type_t;
+
+typedef enum {
         int_type,
         float_type,
         void_type,
@@ -27,6 +36,11 @@ typedef struct {
         int arg_num;
 } A_func;
 
+typedef struct {
+        id_type_t which_usrtype;
+        char* typename;
+} A_usr_def_type_var;
+
 /*Linked list of the arguments of a function*/
 struct arguments_list_t {
         A_var attribute;
@@ -46,11 +60,17 @@ typedef struct idlist{
         char *idname;
         struct idlist *next;
 }  idlist;
+idlist* head; /*head of the init linked list is declared here*/
 
 void init_idlist();
+bool find_in_idlist(char* idname);
+bool is_initidlist_empty();
+bool is_struct_type_exists(A_usr_def_type_var);
 idlist* append_idlist(char* node);
 void reinit_idlist();  /*reinitializes the idlist*/
 void cleanup_idlist(); /*completely deletes the idlist*/
 void declare_variables(int type);
+void declare_usr_def_variables(A_usr_def_type_var);
+
 
 #endif //DATATYPES_H

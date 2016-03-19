@@ -62,6 +62,24 @@ bool is_id_present(symbol_table *my_table, char* text)  {
 	return false;
 }
 
+/*Below function also returns the node structure if id is found*/
+bool is_id_present_with_attribute(symbol_table *my_table, char* text, list_node* output) {
+	int i;
+	for(i = 0; i < TABLE_LENGTH; i++)  {
+		if(my_table->table[i])  {
+			list_node *start=my_table->table[i];
+			for(; start!=NULL; start = start->next)
+				if(strcmp(start->value, text) == 0){
+					output = start;
+					return true;
+				}
+		}
+	}
+	return false;
+}
+
+
+
 void delete_hash_table(symbol_table *my_table)  { /* Clean hash table*/
 	int i;
 	for(i=0; i<TABLE_LENGTH; i++)  {
@@ -164,5 +182,9 @@ void cleanup_symtab()  {  /* Clean Symbol Table */
 }
 
 bool find_id(char *text)  {
-	is_id_present(id_table, text);
+	return is_id_present(id_table, text);
 }
+
+bool find_id_with_attribute(char *text, list_node *attribute) {
+	return is_id_present_with_attribute(id_table, text, attribute);
+};

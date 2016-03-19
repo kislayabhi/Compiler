@@ -4,15 +4,11 @@
 #include "datatypes.h"
 #define TABLE_LENGTH 100
 
-typedef enum {
-        variable,
-        func_name
-} id_type_t;
-
 /* Node attributes can be of 2 types */
 typedef union node_attribute{
         A_var* Avar_ptr;
         A_func* Afunc_ptr;
+        A_usr_def_type_var* Ausr_def_type_var_ptr;
 } node_attribute;
 
 /*For Linked List*/
@@ -43,6 +39,7 @@ void print_symtab();
 void cleanup_symtab();
 void insert_id(id_type_t, char *text, node_attribute*);
 bool find_id(char *text);
+bool find_id_with_attribute(char* text, list_node* attribute);
 
 /* Comment table management routines */
 void init_comtab();

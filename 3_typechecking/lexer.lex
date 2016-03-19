@@ -1,3 +1,4 @@
+%option yylineno
 %option noyywrap
 %{
 #include <stdio.h>
@@ -53,9 +54,9 @@ error    .
 
 {ws}            ;   /* do nothing with whitespace */
 {comment}	;
-{kwInt}         {tokens++; yylval.intval = 0; return INT;}
-{kwFloat}       {tokens++; yylval.intval = 1; return FLOAT;}
-{kwVoid}	{tokens++; yylval.intval = 2; return VOID;}
+{kwInt}         {tokens++; char* temp = "int"; yylval.stringval = strdup(temp); return INT;}
+{kwFloat}       {tokens++; char* temp = "float"; yylval.stringval = strdup(temp); return FLOAT;}
+{kwVoid}	{tokens++; char* temp = "void"; yylval.stringval = strdup(temp); return VOID;}
 {kwIf}          {tokens++;return IF;}
 {kwElse}        {tokens++;return ELSE;}
 {kwWhile}       {tokens++;return WHILE;}
