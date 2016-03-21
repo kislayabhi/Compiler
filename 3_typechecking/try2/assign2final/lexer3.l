@@ -1,8 +1,7 @@
-/*lexer file*/
-
+%option noyywrap
 %{
 #include <stdio.h>
-
+#include "symboltable.h"
 %}
 letter   [A-Za-z]
 digit    [0-9]
@@ -64,8 +63,8 @@ error    .
 {kwUnion}	return STRUCT;
 {kwTypedef}     return TYPEDEF;
 {kwReturn}      return RETURN;
-{ID}            { return ID; }
-{op_assign}     return OP_ASSIGN; 
+{ID}            { yylval.stringval = strdup(yytext); return ID; }
+{op_assign}     return OP_ASSIGN;
 {op_and}        return OP_AND;
 {op_or}         return OP_OR;
 {op_not}        return OP_NOT;
@@ -94,4 +93,3 @@ error    .
 {error}         return ERROR;
 
 %%
-

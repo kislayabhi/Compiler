@@ -5,46 +5,59 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "stdbool.h"
+#include "symboltable.h"
+#include "datatypes.h"
 static int linenumber = 1;
+int current_scope = 0;
 %}
 
+%union
+{
+	char *stringval;
+	list_node *listnodeval;
+	decl_list *decllistval;
+}
 
-%token ID
+%token <stringval>ID
 %token CONST
-%token VOID    
-%token INT     
-%token FLOAT   
-%token IF      
-%token ELSE    
-%token WHILE   
+%token VOID
+%token INT
+%token FLOAT
+%token IF
+%token ELSE
+%token WHILE
 %token FOR
-%token STRUCT  
-%token TYPEDEF 
-%token OP_ASSIGN  
-%token OP_OR   
-%token OP_AND  
-%token OP_NOT  
-%token OP_EQ   
-%token OP_NE   
-%token OP_GT   
-%token OP_LT   
-%token OP_GE   
-%token OP_LE   
-%token OP_PLUS 
-%token OP_MINUS        
-%token OP_TIMES        
-%token OP_DIVIDE       
-%token MK_LB 
-%token MK_RB 
-%token MK_LPAREN       
-%token MK_RPAREN       
-%token MK_LBRACE       
-%token MK_RBRACE       
-%token MK_COMMA        
-%token MK_SEMICOLON    
-%token MK_DOT  
+%token STRUCT
+%token TYPEDEF
+%token OP_ASSIGN
+%token OP_OR
+%token OP_AND
+%token OP_NOT
+%token OP_EQ
+%token OP_NE
+%token OP_GT
+%token OP_LT
+%token OP_GE
+%token OP_LE
+%token OP_PLUS
+%token OP_MINUS
+%token OP_TIMES
+%token OP_DIVIDE
+%token MK_LB
+%token MK_RB
+%token MK_LPAREN
+%token MK_RPAREN
+%token MK_LBRACE
+%token MK_RBRACE
+%token MK_COMMA
+%token MK_SEMICOLON
+%token MK_DOT
 %token ERROR
 %token RETURN
+
+%type<listnodeval> init_id_unit
+%type<decllistval> init_id_list
 
 %start program
 
@@ -60,43 +73,125 @@ global_decl_list: global_decl_list global_decl
                 |
 		;
 
-global_decl	: nonfunction_decl				/* nonfunction decl: variable, struct, typedef, ID(from typedef) */
+global_decl	: nonfunction_decl	/* nonfunction decl: variable, struct, typedef, ID(from typedef) */
 		| function_decl
 		;
 
 /** nunfunction declaration **/
-nonfunction_decl: var_decl 
+nonfunction_decl: var_decl
 		| type_decl
 		;
 
 /* variable declaration */
-var_decl	: LL_type ID OP_ASSIGN init_id_dim_unit MK_SEMICOLON
-		| LL_type init_id_list MK_SEMICOLON
-		| STRUCT ID MK_LBRACE struct_block MK_RBRACE MK_SEMICOLON
-		| HL_type init_id_list MK_SEMICOLON
+var_decl	: LL_type ID OP_ASSIGN init_id_dim_unit MK_SEMICOLON	{
+										sym_table_entry* entry = malloc(sizeof(sym_table_entry));
+										entry->id = strdup($2);
+										entry->mykind = variable;
+										entry->scope = current_scope;
+										if(find_id(entry->id, current_scope, redeclaration) == NULL)
+											insert_id(id_table, entry->id, entry);
+										else {
+											yyerror(" ");
+											printf("\t ID (%s) redeclared", $2);
+										}
+									}
+		| LL_type init_id_list MK_SEMICOLON	{
+								/* Time to push everything to the symbol table */
+								insert_decl_list(default_type);
+								reinit_decl_list();
+							}
+		| HL_type init_id_list MK_SEMICOLON	{
+								/* Time to push everything to the symbol table */
+								insert_decl_list(struct_variable);
+								reinit_decl_list();
+							}
+		| HL_type MK_SEMICOLON
+		| ID ID OP_ASSIGN init_id_dim_unit MK_SEMICOLON	{
+									/*It is important to make sure that $1 is typedef type*/
+									if(find_id($1, current_scope, undeclaration) == NULL)
+									{
+										yyerror(" ");
+										printf("\t typename (%s) undeclared", $1);
+									}
+									else if(find_id($1, current_scope, undeclaration)->entry->mykind != typedef_type)
+									{
+										yyerror(" ");
+										printf("\t typename (%s) undeclared", $1);
+									}
+									else
+									{
+										/*TODO: Create the semantic record for the typedef type which has info about the original type*/
+										/*and use it to modify the "entry->mykind" value present below*/
+										sym_table_entry* entry = malloc(sizeof(sym_table_entry));
+										entry->id = strdup($2);
+										entry->mykind = variable;
+										entry->scope = current_scope;
+										if(find_id(entry->id, current_scope, redeclaration) == NULL)
+											insert_id(id_table, entry->id, entry);
+										else {
+											yyerror(" ");
+											printf("\t ID (%s) redeclared", $2);
+										}
+									}
+								}
 
-		| ID ID OP_ASSIGN init_id_dim_unit MK_SEMICOLON
-		| ID init_id_list MK_SEMICOLON
+		| ID init_id_list MK_SEMICOLON	{
+							/*It is important to make sure that $1 is typedef type*/
+							if(find_id($1, current_scope, undeclaration) == NULL)
+							{
+								yyerror(" ");
+								printf("\t typename (%s) undeclared", $1);
+							}
+							else if(find_id($1, current_scope, undeclaration)->entry->mykind != typedef_type)
+							{
+								yyerror(" ");
+								printf("\t typename (%s) undeclared", $1);
+							}
+							else
+							{
+								/* Time to push everything to the symbol table */
+								/*TODO: Create the semantic record for the typedef type which has info about the original type*/
+								insert_decl_list(default_type);
+								reinit_decl_list();
+							}
+						}
 		;
-							/* int x=1; int x,y; struct A x; struct A {...}; struct A {...}x; struct{...}x*/
+		/* int x=1; int x,y; struct A x; struct A {...}; struct A {...}x; struct{...}x*/
 
 LL_type		: INT | FLOAT ;
 
 HL_type		: struct_type /*| ID*/ ;
 
-/*  */
-init_id_list	: init_id_list MK_COMMA init_id_unit
-		| init_id_unit
+
+init_id_list	: init_id_list MK_COMMA init_id_unit	{$$ = append_decl_list($3);}
+		| init_id_unit	{$$ = append_decl_list($1);}
 		;
 
-init_id_unit	: ID init_id_dim_list
-		| ID
+init_id_unit	: ID init_id_dim_list	{
+						list_node* idunit = malloc(sizeof(list_node));
+						idunit->name = strdup($1);
+						idunit->entry = malloc(sizeof(sym_table_entry));
+						idunit->entry->id = strdup($1);
+						idunit->entry->mykind = array;
+						idunit->entry->scope = current_scope;
+						/*TODO: append this node in the linked list*/
+						$$ = idunit;
+					}
+		| ID 	{
+				list_node* idunit = malloc(sizeof(list_node));
+				idunit->name = strdup($1);
+				idunit->entry = malloc(sizeof(sym_table_entry));
+				idunit->entry->id = strdup($1);
+				idunit->entry->mykind = variable;
+				idunit->entry->scope = current_scope;
+				/*TODO: append this node in the linked list*/
+				$$ = idunit;
+			}
 		;
 
 init_id_dim_list: init_id_dim_list MK_LB init_id_dim_unit MK_RB
 		| MK_LB init_id_dim_unit MK_RB
 		;
-
 
 init_id_dim_unit: init_id_dim_unit OP_OR init_expr_1 | init_expr_1 ;	/* init_id_dim_unit: Here is CONST-EXPR */
 init_expr_1	: init_expr_1 OP_AND init_expr_2 | init_expr_2 ;
@@ -109,13 +204,33 @@ init_expr_7	: MK_LPAREN init_id_dim_unit MK_RPAREN
 		| CONST
 		;
 
-
-
-
 /* struct type */
-struct_type	: STRUCT ID 
-		| STRUCT ID MK_LBRACE struct_block MK_RBRACE
-		| STRUCT MK_LBRACE struct_block MK_RBRACE
+struct_type	: STRUCT ID	{
+					/* It is important to make sure that $2 is a struct type */
+					if(find_id($2, current_scope, undeclaration) == NULL)
+					{
+						yyerror(" ");
+						printf("\t struct typename (%s) undeclared", $2);
+					}
+					else if(find_id($2, current_scope, undeclaration)->entry->mykind != struct_type)
+					{
+						yyerror(" ");
+						printf("\t struct typename (%s) undeclared", $2);
+					}
+				}
+		| STRUCT ID MK_LBRACE {current_scope+=2;} struct_block {cleanup_symtab(current_scope); current_scope-=2;} MK_RBRACE /*But here we intend to push the ID if its not there*/ {
+																	sym_table_entry* entry = malloc(sizeof(sym_table_entry));
+																	entry->id = strdup($2);
+																	entry->mykind = struct_type;
+																	entry->scope = current_scope;
+																	if(find_id(entry->id, current_scope, redeclaration) == NULL)
+																		insert_id(id_table, entry->id, entry);
+																	else {
+																		yyerror(" ");
+																		printf("\t ID (%s) redeclared", $2);
+																	}
+																}
+		| STRUCT MK_LBRACE {current_scope+=2;} struct_block {cleanup_symtab(current_scope); current_scope-=2;} MK_RBRACE
 		;
 
 struct_block	: struct_block struct_block_unit MK_SEMICOLON
@@ -123,28 +238,46 @@ struct_block	: struct_block struct_block_unit MK_SEMICOLON
 		/*|*/
 		;
 
-struct_block_unit: LL_type init_id_list
-		| HL_type init_id_list
-		| ID init_id_list
+struct_block_unit: LL_type init_id_list {
+						/* Time to push everything to the symbol table */
+						insert_decl_list(default_type);
+						reinit_decl_list();
+					}
+		| HL_type init_id_list {
+						/* Time to push everything to the symbol table */
+						insert_decl_list(default_type);
+						reinit_decl_list();
+					}
+		| ID init_id_list 	{
+						/* Time to push everything to the symbol table */
+						insert_decl_list(default_type);
+						reinit_decl_list();
+					}
 		;
 
 /* typedef */
-type_decl	: TYPEDEF LL_type init_id_list MK_SEMICOLON
-		| TYPEDEF struct_type init_id_list MK_SEMICOLON		/* omit case: typedef newname1 newname2; */
+type_decl	: TYPEDEF LL_type init_id_list MK_SEMICOLON /* Here we intend to push the init_id_list as typedef type */{
+			insert_decl_list(typedef_type);
+			reinit_decl_list();
+		}
+		| TYPEDEF struct_type init_id_list MK_SEMICOLON		/* omit case: typedef newname1 newname2; */ {
+			insert_decl_list(typedef_type);
+			reinit_decl_list();
+		}
 		;
 
 
 /********** function declaration *********/
 function_decl	: LL_type ID MK_LPAREN func_param_list MK_RPAREN MK_SEMICOLON
 		| LL_type ID MK_LPAREN MK_RPAREN MK_SEMICOLON
-		| LL_type ID MK_LPAREN func_param_list MK_RPAREN MK_LBRACE func_stmts MK_RBRACE
-		| LL_type ID MK_LPAREN MK_RPAREN MK_LBRACE func_stmts MK_RBRACE
+		| LL_type ID MK_LPAREN func_param_list MK_RPAREN MK_LBRACE {current_scope++;} func_stmts {cleanup_symtab(current_scope); current_scope--;} MK_RBRACE
+		| LL_type ID MK_LPAREN MK_RPAREN MK_LBRACE {current_scope++;} func_stmts {cleanup_symtab(current_scope); current_scope--;} MK_RBRACE
 		| LL_type ID MK_LPAREN MK_RPAREN MK_LBRACE MK_RBRACE
 
 		| VOID ID MK_LPAREN func_param_list MK_RPAREN MK_SEMICOLON
 		| VOID ID MK_LPAREN MK_RPAREN MK_SEMICOLON
-		| VOID ID MK_LPAREN func_param_list MK_RPAREN MK_LBRACE func_stmts MK_RBRACE
-		| VOID ID MK_LPAREN MK_RPAREN MK_LBRACE func_stmts MK_RBRACE
+		| VOID ID MK_LPAREN func_param_list MK_RPAREN MK_LBRACE {current_scope++;} func_stmts {cleanup_symtab(current_scope); current_scope--;} MK_RBRACE
+		| VOID ID MK_LPAREN MK_RPAREN MK_LBRACE {current_scope++;} func_stmts {cleanup_symtab(current_scope); current_scope--;} MK_RBRACE
 		| VOID ID MK_LPAREN MK_RPAREN MK_LBRACE MK_RBRACE
 		;
 		/* omit case: function has parameter but no stmts i.e. int fun(int x){"nothing here"} */
@@ -171,7 +304,7 @@ func_param_dim_list_other: func_param_dim_list_other MK_LB init_id_dim_unit MK_R
 /** function definition **/
 func_stmts	: func_stmts func_stmt
 		| func_stmt
-		; 
+		;
 
 func_stmt	: nonfunction_decl
 		| return_stmt
@@ -188,7 +321,7 @@ return_stmt 	: RETURN MK_SEMICOLON
 assign_stmt	: var_ref OP_ASSIGN expr 				/* assignment-stmt do not support things like: "a=b=c=4;" */
 		;
 
-func_call	: ID MK_LPAREN func_call_param MK_RPAREN
+func_call	: ID MK_LPAREN func_call_param MK_RPAREN /*Make sure that ID is already present.*/
 		| ID MK_LPAREN MK_RPAREN
 		;
 
@@ -214,13 +347,18 @@ loop_stmt	: FOR MK_LPAREN for_block MK_SEMICOLON for_block MK_SEMICOLON for_bloc
 
 for_block	: expr
 		| assign_stmt
-		| 
+		|
 		;
- 
+
 /********* important settings *************/
-var_ref		: ID
+var_ref		: ID	{
+				if(find_id($1, current_scope, undeclaration) == NULL) {
+					yyerror(" ");
+					printf("\t ID (%s) undeclared \n", $1);
+				}
+			}
 		| var_ref id_dim_list
-		| var_ref MK_DOT var_ref				/* case like: x[30].y ; x.y[2] etc. */
+		| var_ref MK_DOT var_ref /* case like: x[30].y ; x.y[2] etc. */
 		;
 
 id_dim_list	: id_dim_list MK_LB expr MK_RB
@@ -253,16 +391,19 @@ main (argc, argv)
 int argc;
 char *argv[];
   {
+  	init_symtab();
+	reinit_decl_list();
      	yyin = fopen(argv[1],"r");
      	yyparse();
-     	printf("%s\n", "Parsing completed. No errors found.");
-  } 
+	print_symtab();
+	cleanup_symtab(0);
+     	printf("%s\n", "\nParsing completed. No errors found.");
+  }
 
 
 yyerror (mesg)
 char *mesg;
 {
-	printf("%s\t%d\t%s\t%s\n", "Error found in Line ", linenumber, "next token: ", yytext );
+	printf("\n%s\t%d\t", "Error found in Line ", linenumber);
   	printf("%s\n", mesg);
-  	exit(1);
 }

@@ -1,0 +1,52 @@
+/** CSCI 5161 Assignment 2 Summary , Minjun Wu 2016.03 **/
+
+solution at: ./assign2final/parser.y
+testfiles: ./testfiles
+
+Solution may have problem. feel free to email me if you find it. 
+
+There are some common problems & announcement: 
+(1)array index: 
+	in declaration: int x[CONST-expr], i.e. int x[1+2]
+	Different case is "RETURN expr ;"
+
+(2)function declaration is not required. So, test14.c is not counted. 
+	Structure declaration is needed. 
+
+(3)typedef:
+	Sorry, at first time I sent an incorrect massage about that. 
+	TYPEDEF is different with #define ("emails I said little different"). So directly replace "type" and "newname" is not a correct way to handle it. 
+
+	Here is webpage:
+http://programmers.stackexchange.com/questions/254473/in-which-stage-of-compilation-is-typedef-resolved-by-the-compiler
+	And here are some examples about TYPEDEF: 
+	a) typedef int size; /* basic: (size) = (int) */
+	b) typedef int size[10]; /* "size x" is same with "int x[10]" */
+	c) typedef struct Student
+		{ int a;
+		}Stu; /* "Stu" is same with "struct Student"  */
+		      /* so, "Stu Paul" is same with "struct Student Paul" */	
+
+	d) typedef struct{...}Stu /* bec Stu is newname, old name can be omitted */
+
+	e) typedef struct{int n;}aaa,bbb,ccc;
+		/* old name omitted, newname are aaa,bbb,ccc */
+		/* typedef struct{int n;}aaa; typedef aaa bbb; typedef aaa ccc; */
+
+	I will check with professor about which case you need to cover, but basic usage is required. And the webpage shows hints for how to handle it. 
+
+(4) Some of you have IF-ELSE problem. 
+	I think the reason is: if IF-stmt only have one stmt in the block, "{""}" is not needed. FOR loop has same situation. /*if(x==1) y=1;*/
+	FOR loop's three expression (for(expr1;expr2;expr3)) should be same expression "type". It's not right saying: expr1 and expr3 are calculation expr, expr2 is condition expr. 
+
+(4) Some of you has an error at test21.c, I mean something like "3 = x; "
+
+
+That's all. Thanks,
+Minjun
+
+
+
+
+
+
