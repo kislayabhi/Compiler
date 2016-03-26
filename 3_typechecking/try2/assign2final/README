@@ -1,52 +1,20 @@
-/** CSCI 5161 Assignment 2 Summary , Minjun Wu 2016.03 **/
+Extra Work.
 
-solution at: ./assign2final/parser.y
-testfiles: ./testfiles
+1. Every Assignment is checked against the type of LHS and the RHS.
 
-Solution may have problem. feel free to email me if you find it. 
+At the time of return, i am handling the function calls also
+Also if a function is declared in the parameter list, I am taking care of it
+when it is used in the function body.
 
-There are some common problems & announcement: 
-(1)array index: 
-	in declaration: int x[CONST-expr], i.e. int x[1+2]
-	Different case is "RETURN expr ;"
+The parameter list at the time of declaration should the match the expressions provided at the time
+of calling the function.
 
-(2)function declaration is not required. So, test14.c is not counted. 
-	Structure declaration is needed. 
+int a;
+a=0.5 /*This produces error in my code but not in the original one*/
 
-(3)typedef:
-	Sorry, at first time I sent an incorrect massage about that. 
-	TYPEDEF is different with #define ("emails I said little different"). So directly replace "type" and "newname" is not a correct way to handle it. 
+For a function declared void, there is no need of a return statement as it is implicit. This is not
+taken care in the provided solution by you. I have included that in my grammar and this can be checked
+via xxxx.c
 
-	Here is webpage:
-http://programmers.stackexchange.com/questions/254473/in-which-stage-of-compilation-is-typedef-resolved-by-the-compiler
-	And here are some examples about TYPEDEF: 
-	a) typedef int size; /* basic: (size) = (int) */
-	b) typedef int size[10]; /* "size x" is same with "int x[10]" */
-	c) typedef struct Student
-		{ int a;
-		}Stu; /* "Stu" is same with "struct Student"  */
-		      /* so, "Stu Paul" is same with "struct Student Paul" */	
-
-	d) typedef struct{...}Stu /* bec Stu is newname, old name can be omitted */
-
-	e) typedef struct{int n;}aaa,bbb,ccc;
-		/* old name omitted, newname are aaa,bbb,ccc */
-		/* typedef struct{int n;}aaa; typedef aaa bbb; typedef aaa ccc; */
-
-	I will check with professor about which case you need to cover, but basic usage is required. And the webpage shows hints for how to handle it. 
-
-(4) Some of you have IF-ELSE problem. 
-	I think the reason is: if IF-stmt only have one stmt in the block, "{""}" is not needed. FOR loop has same situation. /*if(x==1) y=1;*/
-	FOR loop's three expression (for(expr1;expr2;expr3)) should be same expression "type". It's not right saying: expr1 and expr3 are calculation expr, expr2 is condition expr. 
-
-(4) Some of you has an error at test21.c, I mean something like "3 = x; "
-
-
-That's all. Thanks,
-Minjun
-
-
-
-
-
-
+TODO: I am still not taking care of the fact that in a function a[1][2], even a[1] would work in the current case.
+I am sorry for this. Getting this work means 2 hours more effort. I will move onto next rule now.

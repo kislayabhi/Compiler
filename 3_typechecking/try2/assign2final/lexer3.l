@@ -32,7 +32,8 @@ op_plus "+"
 op_minus "-"
 op_times "*"
 op_divide "/"
-constant {digit}+(("."){digit}+)?
+integer_constant {digit}
+float_constant {digit}+(("."){digit}+)
 comment	"/*"(([^*])|([*]+[^/*]))*("*")+"/"
 s-const \"([^"\n])*\"
 ws       [ \t]+
@@ -78,8 +79,9 @@ error    .
 {op_minus}      return OP_MINUS;
 {op_times}      return OP_TIMES;
 {op_divide}     return OP_DIVIDE;
-{constant}      {  return CONST;}
-{s-const}       {  return CONST;}
+{integer_constant}      {return INTEGER_CONST;}
+{float_constant}        {return FLOAT_CONST;}
+{s-const}               {return STRING_CONST;}
 {mk_lparen}     return MK_LPAREN;
 {mk_rparen}     return MK_RPAREN;
 {mk_lbrace}     return MK_LBRACE;

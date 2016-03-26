@@ -103,8 +103,11 @@ void print_hash_table(symbol_table *my_table, bool print_freq)  {
 	for(i = 0; i < TABLE_LENGTH; i++)  {
 		if(my_table->table[i])  {
 			list_node *start=my_table->table[i];
-			for(; start!=NULL; start = start->next)
+			for(; start!=NULL; start = start->next){
 				printf("\n\t\t value: %s \t scope: %d \t kind: %d", start->name, start->entry->scope, start->entry->mykind);
+				if(start->entry->mykind==0)
+					printf("\t variable_type: %d", start->entry->symbol_info.var_info->datatype);
+				}
 		}
 	}
 }
